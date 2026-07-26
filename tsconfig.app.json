@@ -2,7 +2,7 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "es2023",
-    "lib": ["ES2023", "DOM"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "esnext",
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
@@ -16,11 +16,22 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path alias — mirrored by `resolve.alias` in vite.config.ts */
+    "paths": { "@/*": ["./src/*"] },
+
+    /* Strictness — parity with rbs-backend/tsconfig.json, plus
+       exactOptionalPropertyTypes. Cheapest to enable with zero feature code. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "test"]
 }

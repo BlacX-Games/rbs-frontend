@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# Test & build artifacts
+coverage
+playwright-report
+test-results
+blob-report
+*.tsbuildinfo
+
+# dotenv environment variable files
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -26,5 +38,7 @@ dist-ssr
 # Idea
 .idea/
 
-# Docs
-docs/
+# Docs — the GDD and plan at the repo root only. Anchored with a leading slash:
+# a bare `docs/` matches any directory named `docs` at any depth, which would
+# silently swallow a future `src/docs/`.
+/docs/

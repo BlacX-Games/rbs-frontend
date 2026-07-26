@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+
+/*
+ * Phase 0 wires the Tailwind v4 pipeline and nothing else.
+ *
+ * The design system arrives in Phase 1: `src/design/tokens.css` holds both
+ * themes with the measured values from IMPLEMENTATION_PLAN.md §5.2, the
+ * `[data-theme]` variant is declared there, and the self-hosted Fraunces /
+ * Inter / JetBrains Mono faces are registered there too. Until then the
+ * placeholder shell reaches for the brand hexes directly, which is exactly the
+ * habit Phase 1 exists to remove.
+ */
