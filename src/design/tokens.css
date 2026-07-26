@@ -1,0 +1,463 @@
+/*
+ * Design tokens — IMPLEMENTATION_PLAN.md §5.2 and §5.4.
+ *
+ * THIS FILE IS THE SINGLE SOURCE OF TRUTH FOR COLOUR.
+ *
+ * No component, chart, or test carries a hex literal. TypeScript holds token
+ * *names*; values live only here. visx charts pass `var(--series-1)` straight
+ * into SVG `fill`/`stroke` — SVG presentation attributes accept `var()`, so
+ * charts re-theme with the rest of the page and no JS colour array exists to
+ * drift. `test/unit/design/*` parses this file and re-derives every contrast
+ * ratio and ΔE gate in §5.2, so a token edit that breaks a gate fails the build.
+ *
+ * ── Which surface each figure was measured against ────────────────────────────
+ * §5.2 quotes ratios without naming the backdrop. Recovered by reproducing all
+ * 19 published figures to four decimal places:
+ *   • surfaces / ink / gold  → measured on --bg-canvas
+ *   • diverging · categorical · tier ramp → measured on --bg-surface
+ * The test suite encodes exactly this pairing.
+ *
+ * ── Theme mechanics ──────────────────────────────────────────────────────────
+ * §5.2 specifies the OS hook as `@media (prefers-color-scheme: dark)` scoped
+ * with `:where(:not([data-theme]))`, yet the same section labels dark the
+ * default and index.html already ships `color-scheme: dark light`. Both cannot
+ * hold. Dark stays the default and the media query inverts to `light` — same
+ * mechanism, and the explicit toggle still wins in both directions.
+ *
+ * Consequence: the light values appear twice, in `[data-theme='light']` and in
+ * the media block. Pure CSS has no way to share them. `tokens.test.ts` parses
+ * both blocks and asserts an identical property→value map, so the duplication
+ * is a tested invariant rather than a drift risk.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Runtime (themeable) values
+ * ────────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-canvas: #0c0b0a;
+  --bg-surface: #131211;
+  --bg-raised: #1a1917;
+  --bg-overlay: #211f1d;
+
+  /* Hairlines. §5.1 principle 3: structure comes from 1px rules, not boxes. */
+  --border-subtle: rgba(242, 237, 227, 0.08);
+  --border-default: rgba(242, 237, 227, 0.14);
+  --border-strong: rgba(242, 237, 227, 0.24);
+
+  /* Ink — ratios against --bg-canvas */
+  --text-primary: #f2ede3; /* 16.85:1 */
+  --text-secondary: #a8a29a; /* 7.77:1 */
+  --text-tertiary: #8a847b; /* 5.31:1 */
+
+  /*
+   * Gold. Dark needs only one step: #D9B441 clears the body-text bar outright,
+   * so accent and text are the same value here. Light needs two — see below.
+   */
+  --gold-accent: #d9b441; /* 9.88:1 */
+  --gold-text: #d9b441; /* 9.88:1 */
+
+  /*
+   * Ink placed ON a gold fill — primary buttons, the selected segment.
+   * Near-black in BOTH themes, which is not an oversight: gold is a light
+   * colour either way, and paper-on-gold measures only 3.45:1 on the light
+   * theme. Dark ink gives 9.88:1 here and 4.96:1 on paper, so a gold fill can
+   * carry body-size text in both.
+   */
+  --gold-ink: #0c0b0a; /* 9.88:1 on --gold-accent */
+
+  /*
+   * Categorical series — 8 slots, fixed order, NEVER cycled. Assign by slot
+   * index, not by iteration order over the data. All-pairs forms (scatter,
+   * bubble, small multiples) cap at THREE slots; beyond that, fold to "Other"
+   * or facet. This is why the 10 archetypes render as small multiples: no
+   * eight-hue ordering clears the all-pairs ΔE floor.
+   */
+  --series-1: #3987e5; /* blue    */
+  --series-2: #d95926; /* orange  */
+  --series-3: #199e70; /* aqua    */
+  --series-4: #c98500; /* gold    */
+  --series-5: #d55181; /* magenta */
+  --series-6: #008300; /* green   */
+  --series-7: #9085e9; /* violet  */
+  --series-8: #e66767; /* red     */
+
+  /*
+   * Polarity — the diverging scale that REPLACED amber. Measured, every amber
+   * candidate sits at ΔE 5.1–10.4 from brand gold, far below the floor of 15,
+   * so cost %, morale, and margin take a diverging green↔gray↔red scale
+   * instead. Ratios against --bg-surface.
+   *
+   * The midpoint clears the 3:1 bar for graphical objects and large text but
+   * NOT the 4.5:1 body-text bar, in either theme. It is a MARK colour — meter
+   * fill, band, glyph — and never the colour of a label. HealthMeter therefore
+   * renders its text in `--text-primary` and lets the fill and glyph carry the
+   * polarity, which golden rule 9 requires of it anyway.
+   */
+  --polarity-good: #35c25a; /* 8.03:1 */
+  --polarity-neutral: #6e6862; /* 3.40:1 — marks only, never text */
+  --polarity-bad: #e5605a; /* 5.48:1 */
+
+  /*
+   * Status — reserved and minimal, and NEVER colour alone (golden rule 9).
+   * Every component taking these requires an icon and a label in its type.
+   */
+  --status-good: #0ca30c;
+  --status-critical: #d03b3b;
+
+  /*
+   * Progression tiers are ORDINAL, not categorical: one gold hue, monotone
+   * lightness, so the reader sees the order in the colour itself. Dark runs
+   * dark→light; light runs light→dark. Ratios against --bg-surface.
+   */
+  --tier-new: #5e4a12; /* 2.20:1 — fill only, never text */
+  --tier-known: #8c6e1c;
+  --tier-popular: #bc962b;
+  --tier-beloved: #e4c878;
+
+  /* Chart chrome */
+  --chart-gridline: rgba(242, 237, 227, 0.06);
+  --chart-axis: rgba(242, 237, 227, 0.18);
+  --chart-label: #8a847b;
+
+  /*
+   * Elevation — three levels only. Dark is a 1px top highlight plus a soft
+   * shadow; light is a border (see the light block).
+   */
+  --elevation-1: inset 0 1px 0 0 rgba(242, 237, 227, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --elevation-2: inset 0 1px 0 0 rgba(242, 237, 227, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+  --elevation-3: inset 0 1px 0 0 rgba(242, 237, 227, 0.1), 0 12px 32px -4px rgba(0, 0, 0, 0.6);
+
+  /* Scrim behind modal surfaces. */
+  --scrim: rgba(12, 11, 10, 0.72);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg-canvas: #f5efe0;
+  --bg-surface: #fffdf7;
+  --bg-raised: #ffffff;
+  --bg-overlay: #ffffff;
+
+  --border-subtle: rgba(26, 26, 26, 0.08);
+  --border-default: rgba(26, 26, 26, 0.14);
+  --border-strong: rgba(26, 26, 26, 0.24);
+
+  --text-primary: #1a1a1a; /* 15.17:1 */
+  --text-secondary: #57534e; /* 6.65:1 */
+  --text-tertiary: #6b645e; /* 5.07:1 */
+
+  /*
+   * The paper theme needs TWO golds. #A8841C clears the 3:1 bar for UI
+   * components and large text but NOT the 4.5:1 body bar; #7F6210 clears both.
+   * One gold for everything would ship unreadable links on paper.
+   */
+  --gold-accent: #a8841c; /* 3.06:1 — UI, borders, large numerals only */
+  --gold-text: #7f6210; /* 5.01:1 — body-size gold text, links */
+  --gold-ink: #1a1a1a; /* 4.96:1 on --gold-accent */
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a; /* 2.77:1 — sub-3:1, triggers the relief rule */
+  --series-4: #a8841c;
+  --series-5: #e87ba4; /* 2.65:1 — sub-3:1, triggers the relief rule */
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
+
+  --polarity-good: #087a2e; /* 5.39:1 */
+  --polarity-neutral: #8a847b; /* 3.64:1 — marks only, never text */
+  --polarity-bad: #b3271f; /* 6.40:1 */
+
+  --status-good: #0ca30c;
+  --status-critical: #d03b3b;
+
+  --tier-new: #cdaa4a; /* 2.19:1 — fill only, never text */
+  --tier-known: #b08c24;
+  --tier-popular: #8e6e14;
+  --tier-beloved: #634c0e;
+
+  --chart-gridline: rgba(26, 26, 26, 0.06);
+  --chart-axis: rgba(26, 26, 26, 0.18);
+  --chart-label: #6b645e;
+
+  /* §5.4: on the light theme elevation is *borders*, not shadows. */
+  --elevation-1: 0 0 0 1px rgba(26, 26, 26, 0.08);
+  --elevation-2: 0 0 0 1px rgba(26, 26, 26, 0.14);
+  --elevation-3: 0 0 0 1px rgba(26, 26, 26, 0.24);
+
+  --scrim: rgba(26, 26, 26, 0.44);
+}
+
+/*
+ * OS fallback. The pre-paint script in index.html normally stamps [data-theme]
+ * before this can matter; this block is what keeps the CSS correct on its own —
+ * during the first paint of a cold load, and for any snapshot tool that renders
+ * the stylesheet without running the script.
+ *
+ * Values below MUST match [data-theme='light'] exactly. tokens.test.ts enforces
+ * it; do not edit one block without the other.
+ */
+@media (prefers-color-scheme: light) {
+  :root:where(:not([data-theme])) {
+    color-scheme: light;
+
+    --bg-canvas: #f5efe0;
+    --bg-surface: #fffdf7;
+    --bg-raised: #ffffff;
+    --bg-overlay: #ffffff;
+
+    --border-subtle: rgba(26, 26, 26, 0.08);
+    --border-default: rgba(26, 26, 26, 0.14);
+    --border-strong: rgba(26, 26, 26, 0.24);
+
+    --text-primary: #1a1a1a;
+    --text-secondary: #57534e;
+    --text-tertiary: #6b645e;
+
+    --gold-accent: #a8841c;
+    --gold-text: #7f6210;
+    --gold-ink: #1a1a1a;
+
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #a8841c;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+
+    --polarity-good: #087a2e;
+    --polarity-neutral: #8a847b;
+    --polarity-bad: #b3271f;
+
+    --status-good: #0ca30c;
+    --status-critical: #d03b3b;
+
+    --tier-new: #cdaa4a;
+    --tier-known: #b08c24;
+    --tier-popular: #8e6e14;
+    --tier-beloved: #634c0e;
+
+    --chart-gridline: rgba(26, 26, 26, 0.06);
+    --chart-axis: rgba(26, 26, 26, 0.18);
+    --chart-label: #6b645e;
+
+    --elevation-1: 0 0 0 1px rgba(26, 26, 26, 0.08);
+    --elevation-2: 0 0 0 1px rgba(26, 26, 26, 0.14);
+    --elevation-3: 0 0 0 1px rgba(26, 26, 26, 0.24);
+
+    --scrim: rgba(26, 26, 26, 0.44);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Density — §5.4. Comfortable is the ACCESSIBLE mode: 44px is the GDD's own
+ * tap-target minimum, so the default density is the one that meets it.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-density='comfortable'] {
+  --row-h: 44px;
+  --control-h: 44px;
+  --text-table: 14px;
+  --cell-pad-x: 12px;
+  --cell-pad-y: 10px;
+}
+
+[data-density='compact'] {
+  --row-h: 32px;
+  --control-h: 32px;
+  --text-table: 13px;
+  --cell-pad-x: 8px;
+  --cell-pad-y: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Static (non-themeable) values
+ * ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /*
+   * Focus — §5.4: "the one place gold is non-negotiable." Always visible,
+   * never removed.
+   */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* Motion. Collapsed to 1ms under prefers-reduced-motion — see below. */
+  --motion-fast: 120ms; /* hover, toggle */
+  --motion-base: 180ms; /* drawer, popover */
+  --motion-slow: 240ms; /* route transition */
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/*
+ * §5.4: under prefers-reduced-motion every duration collapses to 1ms and
+ * transforms are dropped — opacity only. The custom properties cover anything
+ * that reads a token; the blanket rule catches third-party animation (Radix
+ * data-state transitions) that never sees our variables. Components drop
+ * transforms with the `motion-reduce:` variant at the point of use.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 1ms;
+    --motion-base: 1ms;
+    --motion-slow: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Tailwind theme
+ *
+ * Two blocks, and the split matters:
+ *   @theme        — static values, emitted literally.
+ *   @theme inline — utilities emit `var(--token)` instead of copying the value,
+ *                   which is the only way `bg-surface` can follow the theme.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /*
+   * Clear the stock palette entirely. §5.1: "Keep color sparing… Resist a
+   * rainbow UI." With this line `bg-blue-500` does not exist — the design
+   * system is enforced by the compiler rather than by review.
+   */
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --ease-*: initial;
+
+  /*
+   * 1px spacing base, so utility numbers ARE the pixel values in §5.4:
+   * `p-16` is 16px, `gap-8` is 8px, `size-44` is the comfortable row height.
+   * Deliberately unlike stock Tailwind (where `p-4` is 16px) — the docs, the
+   * design tables, and the code all speak in the same units, and the 4/8px
+   * scale below is the intended vocabulary:  2 4 8 12 16 24 32 48 64 96.
+   */
+  --spacing: 1px;
+
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  /* Tailwind's own defaults, repointed so `font-sans` is never wrong. */
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-display);
+
+  /* Type scale — 1.200 minor third. Body is 14 (--text-base). */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
+  --text-3xl: 38px;
+  --text-4xl: 48px;
+
+  /* Restrained on purpose: big radii read consumer, not operator. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --ease-brand: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@theme inline {
+  /* Surfaces → bg-canvas, bg-surface, bg-raised, bg-overlay */
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-raised: var(--bg-raised);
+  --color-overlay: var(--bg-overlay);
+  --color-scrim: var(--scrim);
+
+  /* Hairlines → border-hairline, border-rule, border-rule-strong */
+  --color-hairline: var(--border-subtle);
+  --color-rule: var(--border-default);
+  --color-rule-strong: var(--border-strong);
+
+  /* Ink → text-ink, text-ink-secondary, text-ink-tertiary */
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-tertiary: var(--text-tertiary);
+
+  /*
+   * Gold → bg-gold / border-gold for UI, text-gold-text for body-size text.
+   * The split is load-bearing on the paper theme; see the light block above.
+   */
+  --color-gold: var(--gold-accent);
+  --color-gold-text: var(--gold-text);
+  --color-gold-ink: var(--gold-ink);
+
+  /* Series → fill-series-1, stroke-series-4, bg-series-2 … */
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+  --color-series-7: var(--series-7);
+  --color-series-8: var(--series-8);
+
+  /* Polarity → text-good, bg-neutral, text-bad */
+  --color-good: var(--polarity-good);
+  --color-neutral: var(--polarity-neutral);
+  --color-bad: var(--polarity-bad);
+
+  /* Status → text-status-good, text-status-critical (always with a glyph) */
+  --color-status-good: var(--status-good);
+  --color-status-critical: var(--status-critical);
+
+  /* Tiers → bg-tier-new … bg-tier-beloved */
+  --color-tier-new: var(--tier-new);
+  --color-tier-known: var(--tier-known);
+  --color-tier-popular: var(--tier-popular);
+  --color-tier-beloved: var(--tier-beloved);
+
+  /* Chart chrome → stroke-chart-gridline, fill-chart-label */
+  --color-chart-gridline: var(--chart-gridline);
+  --color-chart-axis: var(--chart-axis);
+  --color-chart-label: var(--chart-label);
+
+  /* Elevation → shadow-1, shadow-2, shadow-3 (borders on the light theme) */
+  --shadow-1: var(--elevation-1);
+  --shadow-2: var(--elevation-2);
+  --shadow-3: var(--elevation-3);
+}
+
+/*
+ * One definition of the focus ring, so no component can quietly ship its own.
+ * §5.4: 2px gold at 2px offset, always visible, never removed — "the one place
+ * gold is non-negotiable". Used as `focus-visible:focus-ring`.
+ *
+ * `outline` rather than `box-shadow`: outlines survive `forced-colors` mode,
+ * which is where an operator relying on a high-contrast theme needs it most.
+ */
+@utility focus-ring {
+  outline: var(--focus-ring-width) solid var(--gold-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * Numeric type. §5.1 principle 4: tabular figures so digits align down a
+ * column, and U+2212 for negatives rather than a hyphen.
+ */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

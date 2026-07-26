@@ -1,0 +1,79 @@
+/*
+ * Self-hosted webfaces — §5.3.
+ *
+ * The three families and their roles:
+ *   Fraunces        display — page titles, hero KPI figures. A high-contrast
+ *                   warm serif that carries the source artwork's hand-drawn
+ *                   editorial DNA into the console, and the single strongest
+ *                   signal that this is not a stock admin template.
+ *   Inter           UI — body, labels, tables, controls. Built for small sizes
+ *                   and dense tables, which is what an operator spends the day
+ *                   reading.
+ *   JetBrains Mono  IDs, UUIDs, hashes, JSON diffs. Disambiguated 0/O and 1/l —
+ *                   load-bearing when reading a UUID v7 or a 64-hex balancing
+ *                   hash off the screen.
+ *
+ * Files live in `public/fonts/`, so Vite serves them from a stable, unhashed
+ * path and `index.html` can preload them by name. Fetched and committed by
+ * `scripts/fetch-fonts.mjs`; NO CDN — a third-party font request from an admin
+ * surface leaks, in the referrer alone, which console an operator is using, and
+ * the GDD's privacy-first stance rules that out.
+ *
+ * All three are genuine variable fonts (verified: fvar + gvar + avar present),
+ * so one file per family covers the whole weight range and there is no second
+ * request for an italic or a bold.
+ *
+ * The unicode-range is Google's `latin` subset, identical across the three. It
+ * already contains U+2212 — the true minus sign §5.1 mandates for negative
+ * numbers, in place of a hyphen.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-variable.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Fraunces ships four axes: opsz 9–144, wght 100–900, SOFT 0–100, WONK 0–1.
+ * §5.3 asks for it "at low WONK", which is the axis DEFAULT (WONK 0, SOFT 0) —
+ * so no `font-variation-settings` is declared here. Setting the axes explicitly
+ * would pin them and silently disable the optical-size adjustment below.
+ */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-variable.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-variable.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@layer base {
+  html {
+    /*
+     * Let Fraunces pick its own optical size from the rendered pt size — the
+     * whole point of shipping the opsz axis. A 48px hero figure and a 20px
+     * section title want different letterforms, not one scaled outline.
+     */
+    font-optical-sizing: auto;
+  }
+}

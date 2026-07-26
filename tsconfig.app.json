@@ -33,5 +33,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "test"]
+  /* `test` lives in tsconfig.test.json: it needs Node types, and admitting
+     those here would let `process` and `node:fs` type-check inside src/. */
+  "include": ["src"]
 }

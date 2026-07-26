@@ -11,6 +11,73 @@
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Operator Console — Declan's Restaurant &amp; Bar Simulator</title>
+
+    <!--
+      The two faces that render above the fold. JetBrains Mono is deliberately
+      not preloaded: it only appears in IDs, hashes, and diffs, so it would
+      compete with the fonts the operator actually reads first.
+      Self-hosted from /public, so these paths are stable and unhashed.
+    -->
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/fraunces-latin-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <!--
+      Pre-paint theme stamp. This MUST run before first paint and cannot wait
+      for the module graph, or every cold load flashes the default theme before
+      correcting itself.
+
+      It duplicates src/design/theme.ts on purpose. test/unit/design/theme.test.ts
+      extracts this exact script, runs it against stub storage, and asserts it
+      agrees with the module — so the copy cannot drift silently.
+
+      Note `prefers-color-scheme: LIGHT`: dark is the product default, so the
+      query that can move a user off it is the light one. tokens.css inverts
+      identically.
+
+      Phase 10 ships a CSP with no `unsafe-inline`; this block will need a
+      'sha256-…' source allowance rather than a policy relaxation.
+    -->
+    <script>
+      (function () {
+        var theme = null;
+        var density = null;
+
+        // Only the storage reads are guarded. Wrapping the whole function
+        // instead would make a blocked-storage browser fall back to dark even
+        // when the OS asks for paper — and theme.ts, which degrades to the OS
+        // preference, would then disagree with this script on the very first
+        // paint.
+        try {
+          theme = localStorage.getItem('rbs.theme');
+          density = localStorage.getItem('rbs.density');
+        } catch (error) {
+          /* Preference unreadable; fall through to the OS preference. */
+        }
+
+        var resolved =
+          theme === 'dark' || theme === 'light'
+            ? theme
+            : window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+
+        var root = document.documentElement;
+        root.setAttribute('data-theme', resolved);
+        root.setAttribute('data-density', density === 'compact' ? 'compact' : 'comfortable');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

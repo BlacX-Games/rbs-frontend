@@ -1,0 +1,43 @@
+{
+  /* Tests are the one place that is legitimately BOTH environments: Vitest runs
+     them in Node — `node:fs` to read tokens.css, `process.cwd()` to locate it —
+     against a jsdom `document`. Giving them their own project is what keeps
+     `types: ["node"]` out of tsconfig.app.json, where `process.env` would
+     type-check happily inside src/ and then break the browser bundle. */
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode — mirrors tsconfig.app.json, since Vitest resolves the same
+       way Vite does. */
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Path alias — mirrored by `resolve.alias` in vite.config.ts. */
+    "paths": { "@/*": ["./src/*"] },
+
+    /* Strictness — same set as tsconfig.app.json. Test code gets no discount:
+       a helper that lies about its types is worse than no helper. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["test"]
+}
