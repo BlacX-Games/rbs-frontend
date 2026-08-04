@@ -120,6 +120,69 @@ test.describe('the design system', () => {
     }
   });
 
+  test('keeps every day of the calendar at the density floor', async ({ page, density }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Session dates/ }).click();
+
+    const grid = page.getByRole('grid');
+    await expect(grid).toBeVisible();
+
+    const floor = density === 'comfortable' ? 44 : 32;
+    const days = await grid.getByRole('button').all();
+
+    // Forty-two of them, and a calendar is the easiest place to end up with
+    // 20px cells — the layout looks fine and the tap targets are unusable.
+    expect(days.length).toBeGreaterThan(28);
+
+    for (const day of days) {
+      const box = await day.boundingBox();
+      if (box === null) continue;
+
+      const name = await day.getAttribute('aria-label');
+      expect(box.height, name ?? 'unnamed day').toBeGreaterThanOrEqual(floor - 0.5);
+    }
+  });
+
+  test('has no axe violations with the calendar open', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Session dates/ }).click();
+    await expect(page.getByRole('grid')).toBeVisible();
+
+    // Forty-two day buttons and a column-header row, all on --bg-overlay —
+    // which is where tertiary ink turned out to fall under the body-text floor
+    // on the dark theme. Worth its own pass rather than trusting the dialog one.
+    const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('costs one Tab to leave the calendar grid', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Session dates/ }).click();
+
+    const grid = page.getByRole('grid');
+    await expect(grid).toBeVisible();
+
+    // Roving tabindex, measured rather than inferred from a class: exactly one
+    // day is tabbable, so a keyboard operator passes the calendar in one press
+    // instead of forty-two.
+    const tabbable = grid.getByRole('button').and(page.locator('[tabindex="0"]'));
+
+    await expect(tabbable).toHaveCount(1);
+  });
+
+  test('has no axe violations with the command palette open', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Open command palette' }).click();
+    await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
+
+    // The palette is a listbox inside a modal inside a portal — three layers of
+    // ARIA that only exist while it is open.
+    const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
   test('offers a skip link as the first focusable element', async ({ page }) => {
     await page.goto('/');
     await page.keyboard.press('Tab');

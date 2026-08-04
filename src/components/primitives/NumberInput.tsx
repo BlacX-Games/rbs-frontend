@@ -59,7 +59,7 @@ export function NumberInput({
   disabled = false,
   className,
 }: NumberInputProps) {
-  const { id, descriptionId, errorId, describedBy } = useFieldIds({
+  const { id, labelId, descriptionId, errorId, describedBy } = useFieldIds({
     hasDescription: description !== undefined,
     hasError: error !== undefined,
   });
@@ -166,6 +166,7 @@ export function NumberInput({
       id={id}
       label={label}
       labelHidden={labelHidden}
+      labelId={labelId}
     >
       {/*
         Steppers sit BESIDE the field, not stacked inside it. Two stacked

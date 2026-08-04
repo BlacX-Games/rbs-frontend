@@ -2,6 +2,15 @@ import { useId } from 'react';
 
 export interface FieldIds {
   readonly id: string;
+  /**
+   * The `<label>` element's own id.
+   *
+   * Needed whenever a control's accessible name must be the label PLUS
+   * something else — a button trigger showing a chosen value, say. A
+   * `<label for>` overrides a button's text content entirely, so without this
+   * the value it displays is never announced.
+   */
+  readonly labelId: string;
   readonly descriptionId: string;
   readonly errorId: string;
   /**
@@ -27,6 +36,7 @@ export function useFieldIds(options: {
   readonly hasError: boolean;
 }): FieldIds {
   const id = useId();
+  const labelId = `${id}-label`;
   const descriptionId = `${id}-description`;
   const errorId = `${id}-error`;
 
@@ -40,6 +50,7 @@ export function useFieldIds(options: {
 
   return {
     id,
+    labelId,
     descriptionId,
     errorId,
     describedBy: described.length > 0 ? described.join(' ') : undefined,

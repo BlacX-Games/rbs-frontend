@@ -8,13 +8,13 @@ This repo builds the **admin surface only**. Player-facing gameplay lives in the
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
 > **Status: Phase 1 in progress — design system.** Stage 1 shipped the §5.2 colour tokens for both
-> themes, the theme and density mechanics, and the three self-hosted faces. Stage 2a added the
-> **17 form and action primitives**; stage 2b-i adds the **9 overlay and navigation primitives** —
-> Dialog, Drawer, Popover, Tooltip, DropdownMenu, Tabs, Toast, Breadcrumb, Pagination — plus the
-> gallery that renders all 26 in every state, across both themes and both densities. Still to come
-> in Phase 1: stage 2b-ii's four hand-built composites (Combobox, MultiSelect, CommandPalette,
-> DateRangePicker), then the patterns and charts. The router and data layer follow in Phase 2.
-> Full build plan: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
+> themes, the theme and density mechanics, and the three self-hosted faces. **Stage 2 is now
+> complete: all 30 primitives from §5.5**, across three commits — 2a's 17 form and action
+> primitives, 2b-i's 9 Radix-backed overlays and navigation, and 2b-ii's 4 hand-built composites
+> (Combobox, MultiSelect, CommandPalette, DateRangePicker). The gallery renders every one of them
+> in every state, across both themes and both densities. Still to come in Phase 1: stage 3's
+> composed patterns and charts. The router and data layer follow in Phase 2. Full build plan:
+> [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
 
@@ -134,6 +134,14 @@ matching the §5.4 scale (`2 4 8 12 16 24 32 48 64 96`) rather than Tailwind's u
 - **Overlays owe one contract**, shared via `internal/overlay.ts`: portalled, `Esc` closes, focus
   returns to the trigger. `overlay.test.tsx` asserts it across all of them at once; a new overlay
   belongs in that table.
+- **Never put `text-ink-tertiary` on TEXT inside an overlay.** §5.2 measures ink against
+  `--bg-canvas`, but `--bg-overlay` is lighter on the dark theme and tertiary drops from 5.31:1 to
+  **4.43:1** — under the body-text floor. Use `text-ink-secondary` there. Tertiary is still fine for
+  glyphs, which are graphical objects at a 3:1 gate. The full ink × surface matrix is asserted in
+  `contrast.test.ts`.
+- **Dates cross the wire as `YYYY-MM-DD` strings**, never as a `Date` — a `Date` is an instant, not
+  a day, and local-midnight construction sends the wrong day from half the world's timezones. All
+  arithmetic lives in `internal/calendar.ts` and is UTC-only.
 
 The 44px floor is **not** verifiable in Vitest (`css: false` means no stylesheet loads) and **not**
 catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).

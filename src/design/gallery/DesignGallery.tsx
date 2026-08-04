@@ -4,6 +4,7 @@ import { DisplaySpecimens } from '@/design/gallery/sections/DisplaySpecimens';
 import { FieldSpecimens } from '@/design/gallery/sections/FieldSpecimens';
 import { NavigationSpecimens } from '@/design/gallery/sections/NavigationSpecimens';
 import { OverlaySpecimens } from '@/design/gallery/sections/OverlaySpecimens';
+import { SearchSpecimens } from '@/design/gallery/sections/SearchSpecimens';
 
 /**
  * Every stage-2a primitive, in every state, in both themes and both densities.
@@ -28,6 +29,7 @@ export function DesignGallery() {
       <DisplaySpecimens />
       <OverlaySpecimens />
       <NavigationSpecimens />
+      <SearchSpecimens />
     </div>
   );
 }

@@ -20,7 +20,7 @@ export function Textarea({
   rows = 3,
   ...rest
 }: TextareaProps) {
-  const { id, descriptionId, errorId, describedBy } = useFieldIds({
+  const { id, labelId, descriptionId, errorId, describedBy } = useFieldIds({
     hasDescription: description !== undefined,
     hasError: error !== undefined,
   });
@@ -34,6 +34,7 @@ export function Textarea({
       id={id}
       label={label}
       labelHidden={labelHidden}
+      labelId={labelId}
     >
       <textarea
         aria-describedby={describedBy}

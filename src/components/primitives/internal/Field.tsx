@@ -13,6 +13,8 @@ import { cn } from '@/lib/cn';
  */
 export interface FieldProps {
   readonly id: string;
+  /** Lets a trigger reference the label as part of a composed name. */
+  readonly labelId: string;
   readonly descriptionId: string;
   readonly errorId: string;
   readonly label: string;
@@ -25,6 +27,7 @@ export interface FieldProps {
 
 export function Field({
   id,
+  labelId,
   descriptionId,
   errorId,
   label,
@@ -40,7 +43,11 @@ export function Field({
         behaviour operators expect from a dense form, and it survives
         translation as ordinary text rather than as an attribute (§5.6).
       */}
-      <label className={cn('text-ink text-sm font-medium', labelHidden && 'sr-only')} htmlFor={id}>
+      <label
+        className={cn('text-ink text-sm font-medium', labelHidden && 'sr-only')}
+        htmlFor={id}
+        id={labelId}
+      >
         {label}
       </label>
 

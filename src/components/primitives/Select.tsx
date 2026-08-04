@@ -51,7 +51,7 @@ export function Select({
   disabled = false,
   className,
 }: SelectProps) {
-  const { id, descriptionId, errorId, describedBy } = useFieldIds({
+  const { id, labelId, descriptionId, errorId, describedBy } = useFieldIds({
     hasDescription: description !== undefined,
     hasError: error !== undefined,
   });
@@ -65,6 +65,7 @@ export function Select({
       id={id}
       label={label}
       labelHidden={labelHidden}
+      labelId={labelId}
     >
       <RadixSelect.Root
         disabled={disabled}

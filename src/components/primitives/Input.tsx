@@ -34,7 +34,7 @@ export function Input({
   className,
   ...rest
 }: InputProps) {
-  const { id, descriptionId, errorId, describedBy } = useFieldIds({
+  const { id, labelId, descriptionId, errorId, describedBy } = useFieldIds({
     hasDescription: description !== undefined,
     hasError: error !== undefined,
   });
@@ -48,6 +48,7 @@ export function Input({
       id={id}
       label={label}
       labelHidden={labelHidden}
+      labelId={labelId}
     >
       <input
         aria-describedby={describedBy}

@@ -9,6 +9,16 @@
  * focus returns to the trigger" — and Radix supplies both. What is ours is
  * everything below: the surface, the scrim, the motion, and making sure the
  * whole thing survives a high-contrast theme.
+ *
+ * ── One usage rule these surfaces impose ──────────────────────────────────────
+ * NEVER put `text-ink-tertiary` on TEXT inside an overlay. §5.2 measures ink
+ * against --bg-canvas, but --bg-overlay is lighter on the dark theme and
+ * tertiary drops from 5.31:1 to 4.43:1 — under the body-text floor. Use
+ * `text-ink-secondary` (6.49:1 there) for de-emphasised overlay text; tertiary
+ * remains fine for GLYPHS, which are graphical objects at a 3:1 gate.
+ *
+ * The full matrix is asserted in contrast.test.ts. It was found by the axe pass
+ * on an open command palette, which is the only place it was ever visible.
  */
 
 /**

@@ -95,9 +95,8 @@ export function App() {
                   Operator Console
                 </h1>
                 <p className="text-ink-secondary max-w-md text-base">
-                  Phase 1 &mdash; the design system. Tokens, theming, the self-hosted faces, and the
-                  form, action, overlay, and navigation primitives. Combobox, MultiSelect,
-                  CommandPalette, and DateRangePicker follow in stage 2b-ii.
+                  Phase 1 &mdash; the design system. Tokens, theming, the self-hosted faces, and all
+                  30 primitives from &sect;5.5. Composed patterns and charts follow in stage 3.
                 </p>
               </div>
 

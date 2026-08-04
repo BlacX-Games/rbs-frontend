@@ -180,6 +180,57 @@ describe.each(['dark', 'light'] as const)('%s theme contrast', (theme) => {
   });
 });
 
+describe('ink on every surface it can land on', () => {
+  /**
+   * §5.2 measures ink against --bg-canvas only. Overlays are LIGHTER on the
+   * dark theme, so every ratio drops — and one of them drops through the floor.
+   *
+   * Found by the axe pass on an open command palette, not by reading the spec:
+   * --text-tertiary is 5.31:1 on canvas and 4.43:1 on --bg-overlay. This suite
+   * is the whole matrix, so the next surface or ink token added cannot
+   * reintroduce the same class of gap quietly.
+   */
+  const SURFACES = ['--bg-canvas', '--bg-surface', '--bg-raised', '--bg-overlay'] as const;
+
+  describe.each(['dark', 'light'] as const)('%s theme', (theme) => {
+    const tokens = THEMES[theme]();
+
+    it('carries primary and secondary ink at body size anywhere', () => {
+      for (const surface of SURFACES) {
+        for (const ink of ['--text-primary', '--text-secondary'] as const) {
+          const ratio = contrastRatio(token(tokens, ink), token(tokens, surface));
+          expect(ratio, `${ink} on ${surface}`).toBeGreaterThanOrEqual(WCAG_BODY_TEXT);
+        }
+      }
+    });
+
+    it('restricts tertiary ink to the surfaces where it clears 4.5:1', () => {
+      const failing = SURFACES.filter(
+        (surface) =>
+          contrastRatio(token(tokens, '--text-tertiary'), token(tokens, surface)) < WCAG_BODY_TEXT,
+      );
+
+      // Dark's overlay is the ONE cell of twenty-four that fails, at 4.43:1.
+      // The resolution is a usage rule rather than a token change: tertiary is
+      // a de-emphasis step and never carries text on an overlay — menus,
+      // popovers, the palette, and the calendar all use secondary there.
+      //
+      // An exact array, so a surface tweak that adds a second failing cell
+      // fails here instead of shipping.
+      expect(failing).toEqual(theme === 'dark' ? ['--bg-overlay'] : []);
+    });
+
+    it('keeps tertiary ink legible as a GLYPH on every surface', () => {
+      // Where it does still belong: chevrons, separators, the search icon.
+      // A graphical object needs 3:1, which it clears everywhere.
+      for (const surface of SURFACES) {
+        const ratio = contrastRatio(token(tokens, '--text-tertiary'), token(tokens, surface));
+        expect(ratio, surface).toBeGreaterThanOrEqual(WCAG_LARGE_TEXT_AND_UI);
+      }
+    });
+  });
+});
+
 describe('control parts, which are graphical objects at a 3:1 gate', () => {
   describe.each(['dark', 'light'] as const)('%s theme', (theme) => {
     const tokens = THEMES[theme]();
