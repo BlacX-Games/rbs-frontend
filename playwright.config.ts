@@ -17,10 +17,33 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
-  // Phase 1 adds the light/dark and comfortable/compact projects that the
-  // §5.6 accessibility contract requires; Phase 0 only needs one browser to
-  // prove the harness runs.
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  /*
+   * The §5.6 matrix, SCOPED rather than applied to everything.
+   *
+   * `*.matrix.spec.ts` runs once per theme × density; every other spec runs
+   * once. Quadrupling the whole suite would buy nothing — "boots clean" and
+   * "self-hosts the faces" are theme-agnostic, and the theme-mechanics tests
+   * call `emulateMedia` themselves, so a project-level colorScheme there is
+   * either redundant or actively misleading about what is under test.
+   *
+   * Density is not a Playwright `use` option, so it travels in `metadata` and
+   * the fixture in e2e/fixtures.ts seeds it into localStorage before load.
+   */
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: /\.matrix\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    ...(['dark', 'light'] as const).flatMap((colorScheme) =>
+      (['comfortable', 'compact'] as const).map((density) => ({
+        name: `${colorScheme}-${density}`,
+        testMatch: /\.matrix\.spec\.ts$/,
+        metadata: { density },
+        use: { ...devices['Desktop Chrome'], colorScheme },
+      })),
+    ),
+  ],
 
   webServer: {
     command: 'npm run dev',

@@ -63,6 +63,8 @@ describe('the palette tokens §5.2 requires', () => {
     '--gold-accent',
     '--gold-text',
     '--gold-ink',
+    '--danger-ink',
+    '--control-edge',
     '--polarity-good',
     '--polarity-neutral',
     '--polarity-bad',
@@ -119,6 +121,12 @@ describe('density', () => {
   it('meets the 44px tap-target floor in comfortable', () => {
     // §5.6 and the GDD both put the minimum at 44×44, which makes comfortable
     // the accessible mode rather than merely the roomier one.
+    //
+    // This only asserts the TOKEN. Whether a control actually renders 44px tall
+    // is unobservable here — `css: false` means jsdom loads no stylesheet — so
+    // e2e/design.matrix.spec.ts measures real boxes with boundingBox(). Note
+    // that axe cannot cover the gap either: WCAG 2.2 SC 2.5.8 sets the AA floor
+    // at 24×24, and 44×44 is SC 2.5.5, which is AAA.
     expect(comfortable().get('--row-h')).toBe('44px');
     expect(comfortable().get('--control-h')).toBe('44px');
   });

@@ -63,13 +63,33 @@ function Segmented<T extends string>({
           value={optionValue}
           title={optionLabel}
           className={[
-            'text-ink-secondary grid size-32 place-items-center rounded-sm',
-            'transition-colors duration-120 ease-brand',
+            // The TARGET follows --control-h; the gold fill below stays 32px.
+            // §5.6 asks for 44×44 in comfortable density and this control was
+            // hard-coded to 32 at both densities — the first consumer of
+            // --control-h, and the reason it had none until stage 2a.
+            //
+            // Note axe cannot see this: WCAG 2.2 SC 2.5.8 sets the AA floor at
+            // 24×24, and 44×44 is SC 2.5.5, which is AAA. Only the
+            // boundingBox() assertions in e2e/design.matrix.spec.ts catch it.
+            'group text-ink-secondary grid min-h-(--control-h) min-w-(--control-h)',
+            'place-items-center rounded-sm transition-colors duration-120 ease-brand',
             'hover:text-ink focus-visible:focus-ring',
-            'data-[state=on]:bg-gold data-[state=on]:text-gold-ink',
           ].join(' ')}
         >
-          <Icon className="size-16" aria-hidden={true} />
+          {/*
+            The visual weight is unchanged — SC 2.5.5 and 2.5.8 both measure the
+            target, not the ink, so the gold fill stays a restrained 32px square
+            inside a 44px hit area.
+          */}
+          <span
+            className={[
+              'grid size-32 place-items-center rounded-sm',
+              'transition-colors duration-120 ease-brand',
+              'group-data-[state=on]:bg-gold group-data-[state=on]:text-gold-ink',
+            ].join(' ')}
+          >
+            <Icon className="size-16" aria-hidden={true} />
+          </span>
           <span className="sr-only">{optionLabel}</span>
         </ToggleGroup.Item>
       ))}

@@ -71,6 +71,42 @@
   --gold-ink: #0c0b0a; /* 9.88:1 on --gold-accent */
 
   /*
+   * Ink placed ON a --polarity-bad fill — the `danger` button.
+   *
+   * Unlike --gold-ink this one FLIPS between themes, and that is the whole
+   * point: --polarity-bad is a LIGHT red on dark (#e5605a, wanting dark ink)
+   * and a DARK red on paper (#b3271f, wanting light ink). Every existing ink
+   * token fails one side — --gold-ink measures 5.76:1 here but only 2.67:1 on
+   * paper. Without this token a filled danger button has no legible label.
+   *
+   * Neither value is new: dark reuses --bg-canvas, light reuses --bg-surface.
+   *
+   * Note also what is NOT the danger fill. --status-critical (#d03b3b,
+   * identical in both themes) cannot back a button at all — the dark theme has
+   * no white, --text-primary on it gives 4.12:1 and near-black 4.09:1. It stays
+   * a mark colour.
+   */
+  --danger-ink: #0c0b0a; /* 5.76:1 on --polarity-bad */
+
+  /*
+   * The boundary of an INTERACTIVE control — input, textarea, select trigger,
+   * checkbox, radio. Not a hairline: --border-default composited over its own
+   * backdrop measures 1.39:1 dark / 1.33:1 light, and for a form control the
+   * border IS the affordance that identifies the component, so WCAG 2.2
+   * SC 1.4.11 wants 3:1. Decorative rules keep --border-default and §5.1's
+   * hairline language is untouched.
+   *
+   * Deliberately not named --border-*: tokens.test.ts excludes that prefix from
+   * its opaque-hex assertion, so a --border-control would silently escape
+   * measurement — the exact failure that file exists to catch. Value reuses
+   * --text-tertiary, already measured, giving 4.74–5.82:1 on every surface.
+   *
+   * axe does not implement SC 1.4.11 for control boundaries. CI cannot see a
+   * regression here; contrast.test.ts is the only guard.
+   */
+  --control-edge: #8a847b; /* 5.05:1 on --bg-surface */
+
+  /*
    * Categorical series — 8 slots, fixed order, NEVER cycled. Assign by slot
    * index, not by iteration order over the data. All-pairs forms (scatter,
    * bubble, small multiples) cap at THREE slots; beyond that, fold to "Other"
@@ -161,6 +197,11 @@
   --gold-text: #7f6210; /* 5.01:1 — body-size gold text, links */
   --gold-ink: #1a1a1a; /* 4.96:1 on --gold-accent */
 
+  /* Flipped against the dark block — see the note there. Reuses --bg-surface. */
+  --danger-ink: #fffdf7; /* 6.40:1 on --polarity-bad */
+
+  --control-edge: #6b645e; /* 5.72:1 on --bg-surface */
+
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a; /* 2.77:1 — sub-3:1, triggers the relief rule */
@@ -223,6 +264,9 @@
     --gold-accent: #a8841c;
     --gold-text: #7f6210;
     --gold-ink: #1a1a1a;
+    --danger-ink: #fffdf7;
+
+    --control-edge: #6b645e;
 
     --series-1: #2a78d6;
     --series-2: #eb6834;
@@ -269,6 +313,7 @@
   --text-table: 14px;
   --cell-pad-x: 12px;
   --cell-pad-y: 10px;
+  --control-pad-x: 16px;
 }
 
 [data-density='compact'] {
@@ -277,6 +322,7 @@
   --text-table: 13px;
   --cell-pad-x: 8px;
   --cell-pad-y: 4px;
+  --control-pad-x: 12px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -404,6 +450,15 @@
   --color-gold: var(--gold-accent);
   --color-gold-text: var(--gold-text);
   --color-gold-ink: var(--gold-ink);
+
+  /* Ink on a danger fill → text-danger-ink. Flips between themes. */
+  --color-danger-ink: var(--danger-ink);
+
+  /*
+   * Interactive control boundary → border-control-edge. Reserved for controls;
+   * decorative rules use border-rule.
+   */
+  --color-control-edge: var(--control-edge);
 
   /* Series → fill-series-1, stroke-series-4, bg-series-2 … */
   --color-series-1: var(--series-1);

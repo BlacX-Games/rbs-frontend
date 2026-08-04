@@ -7,12 +7,13 @@ talking to the `/admin/v1` surface of [`rbs-backend`](../rbs-backend).
 This repo builds the **admin surface only**. Player-facing gameplay lives in the Unity client
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
-> **Status: Phase 1 in progress — design system.** Stage 1 is complete: the §5.2 colour tokens for
-> both themes, the theme and density mechanics, and the three self-hosted faces, with a Vitest suite
-> that re-derives every published contrast ratio and ΔE gate from the shipped CSS. Still to come in
-> Phase 1: the primitives, the composed patterns and charts, and the `/design` gallery. The router
-> and data layer follow in Phase 2. Full build plan:
-> [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
+> **Status: Phase 1 in progress — design system.** Stage 1 shipped the §5.2 colour tokens for both
+> themes, the theme and density mechanics, and the three self-hosted faces. Stage 2a adds the
+> **17 form and action primitives** — Button, IconButton, Input, NumberInput, Textarea, Select,
+> Checkbox, Radio, Switch, Slider, Badge, Tag, Avatar, Progress, Skeleton, Separator, Kbd — and the
+> gallery that renders every one of them in every state. Still to come in Phase 1: stage 2b's
+> overlays and navigation, then the composed patterns and charts. The router and data layer follow
+> in Phase 2. Full build plan: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
 
@@ -63,19 +64,26 @@ no CORS middleware until its own Phase 3.
 
 ```
 src/
-  main.tsx · App.tsx · app.css     entry, stage-1 shell, Tailwind pipeline
+  main.tsx · App.tsx · app.css     entry, the gallery page, Tailwind pipeline
   design/
     tokens.css                     THE source of truth for colour — both themes
     fonts.css                      @font-face for the three self-hosted faces
     theme.ts · theme-context.ts    preferences, storage, resolution
     ThemeProvider.tsx              provider; ThemeControls.tsx toggles
-  lib/env.ts                       Zod-validated build config
+    gallery/                       every primitive in every state (→ /design in Phase 2)
+  components/primitives/           the §5.5 primitives, one file each
+    internal/                      shared class records, Field shell, useFieldIds
+  lib/cn.ts · env.ts               class joiner; Zod-validated build config
 public/fonts/                      committed WOFF2 + OFL licences (no CDN)
 scripts/fetch-fonts.mjs            reproduces public/fonts from Google Fonts
 test/                              Vitest — support/ helpers, unit/ suites
-e2e/                               Playwright + axe
+e2e/                               Playwright + axe, incl. the theme × density matrix
 docs/                              GDD + IMPLEMENTATION_PLAN.md (gitignored)
 ```
+
+There is deliberately **no `index.ts` barrel** under `primitives/`. Import each one directly
+(`@/components/primitives/Button`) so a test pulling in one component does not drag all seventeen —
+and so `patterns/` cannot start an import cycle in stage 3.
 
 The target layout — `routes/`, `domain/`, `api/`, `mocks/`, `components/`, `features/` — is
 specified in §7.2 of the plan and fills in as the phases land.
@@ -88,15 +96,41 @@ resolve to `var(--…)` and therefore follow the theme with no JavaScript. Chart
 properties straight into SVG `fill`/`stroke`. The stock Tailwind palette is switched off, so
 `bg-blue-500` does not exist.
 
-Two things to know before reaching for a colour:
+Four things to know before reaching for a colour:
 
 - **`--gold-accent` vs `--gold-text`.** On the paper theme these differ. The accent clears 3:1 (UI,
   borders, large numerals); only `--gold-text` clears 4.5:1 for body-size text and links.
 - **`--polarity-neutral` is a mark colour, never text.** It clears 3:1, not 4.5:1, in both themes —
   so meters and glyphs carry the polarity while the label stays in ordinary ink.
+- **`--control-edge` bounds interactive controls; `--border-default` bounds everything else.** A
+  hairline measures 1.39:1 dark / 1.33:1 light, and on a form control the border _is_ the affordance
+  that identifies it, which WCAG 2.2 SC 1.4.11 puts at 3:1. Decorative rules keep the hairline.
+- **`--danger-ink` is the only ink token that flips between themes**, because `--polarity-bad` does:
+  a light red on dark, a dark red on paper. No single ink survives both.
 
 Spacing utilities are **pixel-valued**: `--spacing` is `1px`, so `p-16` is 16px and `gap-8` is 8px,
 matching the §5.4 scale (`2 4 8 12 16 24 32 48 64 96`) rather than Tailwind's usual 4× step.
+
+### Writing a primitive
+
+- **`min-h-(--control-h)`, never `h-`.** §5.6 wants a 44×44 floor in comfortable density _and_ no
+  fixed-height text containers at +30% text expansion. `min-h` is the only reading that honours both.
+  Interactive primitives get **no `size` prop** — density is the operator's preference, and a
+  per-instance `size="sm"` is an escape hatch from an accessibility contract.
+- **No hard-coded user-visible strings.** Every label arrives as a prop, and is _required_ wherever a
+  control is meaningless without one. `contract.test.tsx` fails the build if a component renders text
+  the caller did not supply.
+- **Status is never colour alone**, and it is the type system that enforces it: a non-neutral `tone`
+  requires an `icon`. Tone colours the glyph; the label stays `text-ink`.
+- **`className` is additive.** `cn()` appends and does not merge — anything the component owns is
+  changed through a prop, not an override.
+- **Radix props need conditional spreading.** `exactOptionalPropertyTypes` rejects
+  `<Radix.Root value={maybeUndefined}>`; use `{...(value !== undefined && { value })}`. Widening your
+  own prop does not help — the strict side is theirs.
+
+The 44px floor is **not** verifiable in Vitest (`css: false` means no stylesheet loads) and **not**
+catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).
+`e2e/design.matrix.spec.ts` measures real boxes across theme × density and is the only guard.
 
 ## Conventions
 

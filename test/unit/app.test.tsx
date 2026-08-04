@@ -1,24 +1,18 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { App } from '@/App';
 import { renderWithProviders } from '../support/render';
 
 /**
  * The stage 1 shell. Thin on purpose — its job is to prove the design system is
  * actually wired into a rendered tree, not to test the components themselves.
- * Exhaustive per-component coverage arrives with the `/design` gallery.
+ * Exhaustive per-component coverage lives beside each primitive.
+ *
+ * Storage and the <html> attributes are reset by `test/setup.ts`, which every
+ * suite shares.
  */
 describe('<App />', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    document.documentElement.removeAttribute('data-theme');
-    document.documentElement.removeAttribute('data-density');
-  });
-
   it('renders the console shell', () => {
     renderWithProviders(<App />);
 

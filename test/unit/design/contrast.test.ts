@@ -81,6 +81,40 @@ const POLARITY_CASES: Readonly<Record<'dark' | 'light', readonly Case[]>> = {
   ],
 };
 
+/**
+ * The two control tokens stage 2a added. Neither is measured against a surface
+ * in the §5.2 sense, so they carry their own reference in `against`.
+ *
+ * --danger-ink is the one ink token that FLIPS between themes, because
+ * --polarity-bad flips: a light red on dark, a dark red on paper. The dark
+ * value on the paper theme measures 2.67:1 — asserted below, because that near
+ * miss is the entire reason the token exists.
+ *
+ * --control-edge covers WCAG 2.2 SC 1.4.11, which axe does not implement for
+ * control boundaries. These four assertions are the ONLY thing standing between
+ * a token edit and a form nobody can see the edges of.
+ */
+const CONTROL_CASES: Readonly<Record<'dark' | 'light', readonly Case[]>> = {
+  dark: [
+    { token: '--danger-ink', against: '--polarity-bad', ratio: 5.76, gate: WCAG_BODY_TEXT },
+    {
+      token: '--control-edge',
+      against: '--bg-surface',
+      ratio: 5.05,
+      gate: WCAG_LARGE_TEXT_AND_UI,
+    },
+  ],
+  light: [
+    { token: '--danger-ink', against: '--polarity-bad', ratio: 6.4, gate: WCAG_BODY_TEXT },
+    {
+      token: '--control-edge',
+      against: '--bg-surface',
+      ratio: 5.72,
+      gate: WCAG_LARGE_TEXT_AND_UI,
+    },
+  ],
+};
+
 /** The lightest step of each ordinal ramp — fill only, never text. */
 const TIER_CASES: Readonly<Record<'dark' | 'light', Case>> = {
   dark: { token: '--tier-new', against: '--bg-surface', ratio: 2.2, gate: 0 },
@@ -99,7 +133,7 @@ function ratioOf(tokens: TokenMap, testCase: Case): number {
 describe.each(['dark', 'light'] as const)('%s theme contrast', (theme) => {
   const tokens = THEMES[theme]();
 
-  describe.each([...INK_CASES[theme], ...POLARITY_CASES[theme]])(
+  describe.each([...INK_CASES[theme], ...POLARITY_CASES[theme], ...CONTROL_CASES[theme]])(
     '$token on $against',
     (testCase) => {
       it(`measures ${testCase.ratio.toFixed(2)}:1, as §5.2 documents`, () => {
@@ -124,6 +158,16 @@ describe.each(['dark', 'light'] as const)('%s theme contrast', (theme) => {
     ).toBeGreaterThanOrEqual(WCAG_BODY_TEXT);
   });
 
+  it('keeps the control edge visible on every surface a control can sit on', () => {
+    // SC 1.4.11 applies wherever the control lands, not just on --bg-surface.
+    // Worst pairing measures 4.74:1, so there is real headroom above 3:1 — but
+    // a future surface tweak could erode it silently, since axe is blind here.
+    for (const surface of ['--bg-canvas', '--bg-surface', '--bg-raised'] as const) {
+      const ratio = contrastRatio(token(tokens, '--control-edge'), token(tokens, surface));
+      expect(ratio, surface).toBeGreaterThanOrEqual(WCAG_LARGE_TEXT_AND_UI);
+    }
+  });
+
   it('keeps every surface distinguishable from the one above it', () => {
     const surfaces = ['--bg-canvas', '--bg-surface', '--bg-raised'] as const;
 
@@ -133,6 +177,73 @@ describe.each(['dark', 'light'] as const)('%s theme contrast', (theme) => {
       // same value make every hairline-bounded card invisible.
       expect(token(tokens, lower)).not.toBe(token(tokens, upper));
     }
+  });
+});
+
+describe('control parts, which are graphical objects at a 3:1 gate', () => {
+  describe.each(['dark', 'light'] as const)('%s theme', (theme) => {
+    const tokens = THEMES[theme]();
+
+    it('keeps the switch thumb readable against both rail states', () => {
+      // The thumb is --bg-canvas in BOTH states rather than tinted to match its
+      // rail, because that is the only choice that clears 3:1 all four ways:
+      // 5.31/9.88 on dark, 5.07/3.06 on paper. A thumb tinted to the surface
+      // would disappear into the gold rail on the light theme.
+      for (const rail of ['--text-tertiary', '--gold-accent'] as const) {
+        const ratio = contrastRatio(token(tokens, '--bg-canvas'), token(tokens, rail));
+        expect(ratio, rail).toBeGreaterThanOrEqual(WCAG_LARGE_TEXT_AND_UI);
+      }
+    });
+
+    it('needs a border on the slider rail, because the fill alone is invisible', () => {
+      // --bg-raised against --bg-surface measures 1.07:1 dark / 1.02:1 light.
+      // That is the finding that put --control-edge on the Slider track and the
+      // Progress track: without it the rail is a shape nobody can locate, and
+      // an operator cannot see how far a value sits along a range they cannot
+      // see the ends of.
+      const railAlone = contrastRatio(token(tokens, '--bg-raised'), token(tokens, '--bg-surface'));
+      const withEdge = contrastRatio(
+        token(tokens, '--control-edge'),
+        token(tokens, '--bg-surface'),
+      );
+
+      expect(railAlone).toBeLessThan(WCAG_LARGE_TEXT_AND_UI);
+      expect(withEdge).toBeGreaterThanOrEqual(WCAG_LARGE_TEXT_AND_UI);
+    });
+  });
+});
+
+describe('why --danger-ink is a separate token', () => {
+  it('shows --gold-ink failing on a danger fill in the paper theme', () => {
+    const tokens = lightTokens();
+
+    // 2.67:1. Reusing --gold-ink for the danger button — the obvious economy,
+    // since it is already "the ink for a coloured fill" — would have shipped an
+    // unreadable label on paper. --polarity-bad inverts direction between
+    // themes and no single ink survives both; this is the assertion that stops
+    // someone collapsing the two tokens back together.
+    const reused = contrastRatio(token(tokens, '--gold-ink'), token(tokens, '--polarity-bad'));
+
+    expect(reused).toBeLessThan(WCAG_BODY_TEXT);
+  });
+
+  it('rules --status-critical out as a fill, on the strength of the dark theme', () => {
+    // #d03b3b is identical in both themes, and the DARK theme has no ink that
+    // clears 4.5:1 on it: --text-primary gives 4.12:1 and near-black 4.09:1,
+    // because the palette has no white to reach for. Paper does clear it
+    // (near-white measures 4.72:1) — but a token has to work in both themes, so
+    // one failing side disqualifies the fill outright.
+    //
+    // --status-critical therefore stays a MARK colour and the danger fill is
+    // --polarity-bad. Asserted so nobody reaches for the more obvious name.
+    const tokens = darkTokens();
+
+    const best = Math.max(
+      contrastRatio(token(tokens, '--text-primary'), token(tokens, '--status-critical')),
+      contrastRatio(token(tokens, '--danger-ink'), token(tokens, '--status-critical')),
+    );
+
+    expect(best).toBeLessThan(WCAG_BODY_TEXT);
   });
 });
 
