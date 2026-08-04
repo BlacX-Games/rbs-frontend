@@ -8,12 +8,13 @@ This repo builds the **admin surface only**. Player-facing gameplay lives in the
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
 > **Status: Phase 1 in progress — design system.** Stage 1 shipped the §5.2 colour tokens for both
-> themes, the theme and density mechanics, and the three self-hosted faces. Stage 2a adds the
-> **17 form and action primitives** — Button, IconButton, Input, NumberInput, Textarea, Select,
-> Checkbox, Radio, Switch, Slider, Badge, Tag, Avatar, Progress, Skeleton, Separator, Kbd — and the
-> gallery that renders every one of them in every state. Still to come in Phase 1: stage 2b's
-> overlays and navigation, then the composed patterns and charts. The router and data layer follow
-> in Phase 2. Full build plan: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
+> themes, the theme and density mechanics, and the three self-hosted faces. Stage 2a added the
+> **17 form and action primitives**; stage 2b-i adds the **9 overlay and navigation primitives** —
+> Dialog, Drawer, Popover, Tooltip, DropdownMenu, Tabs, Toast, Breadcrumb, Pagination — plus the
+> gallery that renders all 26 in every state, across both themes and both densities. Still to come
+> in Phase 1: stage 2b-ii's four hand-built composites (Combobox, MultiSelect, CommandPalette,
+> DateRangePicker), then the patterns and charts. The router and data layer follow in Phase 2.
+> Full build plan: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
 
@@ -127,6 +128,12 @@ matching the §5.4 scale (`2 4 8 12 16 24 32 48 64 96`) rather than Tailwind's u
 - **Radix props need conditional spreading.** `exactOptionalPropertyTypes` rejects
   `<Radix.Root value={maybeUndefined}>`; use `{...(value !== undefined && { value })}`. Widening your
   own prop does not help — the strict side is theirs.
+- **Check Radix's default strings.** Several primitives ship hard-coded English — the Toast viewport
+  defaults to `"Notifications ({hotkey})"` — which would go out untranslated. Where one exists, take
+  it as a required prop instead.
+- **Overlays owe one contract**, shared via `internal/overlay.ts`: portalled, `Esc` closes, focus
+  returns to the trigger. `overlay.test.tsx` asserts it across all of them at once; a new overlay
+  belongs in that table.
 
 The 44px floor is **not** verifiable in Vitest (`css: false` means no stylesheet loads) and **not**
 catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).

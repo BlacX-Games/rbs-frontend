@@ -2,6 +2,8 @@ import { ActionSpecimens } from '@/design/gallery/sections/ActionSpecimens';
 import { ChoiceSpecimens } from '@/design/gallery/sections/ChoiceSpecimens';
 import { DisplaySpecimens } from '@/design/gallery/sections/DisplaySpecimens';
 import { FieldSpecimens } from '@/design/gallery/sections/FieldSpecimens';
+import { NavigationSpecimens } from '@/design/gallery/sections/NavigationSpecimens';
+import { OverlaySpecimens } from '@/design/gallery/sections/OverlaySpecimens';
 
 /**
  * Every stage-2a primitive, in every state, in both themes and both densities.
@@ -24,6 +26,8 @@ export function DesignGallery() {
       <FieldSpecimens />
       <ChoiceSpecimens />
       <DisplaySpecimens />
+      <OverlaySpecimens />
+      <NavigationSpecimens />
     </div>
   );
 }

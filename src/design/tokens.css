@@ -423,6 +423,43 @@
   --radius-lg: 10px;
 
   --ease-brand: cubic-bezier(0.2, 0, 0, 1);
+
+  /*
+   * Overlay entrances. Two, and the pair is the point.
+   *
+   * §5.4: "under prefers-reduced-motion all durations collapse to 1ms and
+   * transforms are dropped — opacity only." A duration of 1ms makes a transform
+   * imperceptible rather than absent, which is not the same promise. So
+   * --animate-fade-in is the opacity-only motion, and every component that uses
+   * a transform pairs it with `motion-reduce:animate-fade-in` to genuinely swap
+   * the transform out.
+   *
+   * Durations reference the runtime --motion-* vars rather than literals, so
+   * the reduced-motion block collapses these too.
+   */
+  --animate-fade-in: fade-in var(--motion-fast) var(--motion-ease);
+  --animate-scale-in: scale-in var(--motion-base) var(--motion-ease);
+  --animate-slide-in-right: slide-in-right var(--motion-base) var(--motion-ease);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
 }
 
 @theme inline {

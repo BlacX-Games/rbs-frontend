@@ -86,6 +86,40 @@ test.describe('the design system', () => {
     expect(results.violations).toEqual([]);
   });
 
+  test('has no axe violations with an overlay open', async ({ page }) => {
+    await page.goto('/');
+
+    // A closed overlay is unmounted, so the pass above never sees a portalled
+    // surface at all — the dialog, its scrim, and its focus guards are exactly
+    // the markup most likely to be wrong and least likely to be checked.
+    await page.getByRole('button', { name: 'Open delete dialog' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('keeps a dialog control at the density floor', async ({ page, density }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Open delete dialog' }).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    const floor = density === 'comfortable' ? 44 : 32;
+
+    for (const control of await dialog.getByRole('button').all()) {
+      const box = await control.boundingBox();
+      if (box === null) continue;
+
+      // Portalled content inherits [data-density] from <html>, not from the
+      // trigger's subtree — worth proving rather than assuming, since a portal
+      // escaping the cascade would silently ship 44px controls in compact.
+      expect(box.height, await control.innerText()).toBeGreaterThanOrEqual(floor - 0.5);
+    }
+  });
+
   test('offers a skip link as the first focusable element', async ({ page }) => {
     await page.goto('/');
     await page.keyboard.press('Tab');
