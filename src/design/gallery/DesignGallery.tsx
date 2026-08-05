@@ -5,6 +5,7 @@ import { DisplaySpecimens } from '@/design/gallery/sections/DisplaySpecimens';
 import { FieldSpecimens } from '@/design/gallery/sections/FieldSpecimens';
 import { NavigationSpecimens } from '@/design/gallery/sections/NavigationSpecimens';
 import { OverlaySpecimens } from '@/design/gallery/sections/OverlaySpecimens';
+import { ReadoutSpecimens } from '@/design/gallery/sections/ReadoutSpecimens';
 import { SearchSpecimens } from '@/design/gallery/sections/SearchSpecimens';
 
 /**
@@ -32,6 +33,7 @@ export function DesignGallery() {
       <NavigationSpecimens />
       <SearchSpecimens />
       <ChartSpecimens />
+      <ReadoutSpecimens />
     </div>
   );
 }
