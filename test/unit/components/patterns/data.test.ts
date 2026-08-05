@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { countChanges, diffJson } from '@/components/patterns/internal/diff';
 import { toCsv } from '@/components/patterns/internal/csv';
-import { FLAVOR_DIMENSIONS, emptyFlavorProfile, toFlavorArray } from '@/components/patterns/flavor';
 
 /**
  * The pure logic under the data patterns.
  *
  * Tested apart from the components because these are where the real hazards
- * live — a CSV that corrupts on the first comma, a diff that reports a reformat
- * as a change, an array whose order silently rewrites Unity's anchor table.
+ * live — a CSV that corrupts on the first comma, and a diff that reports a
+ * reformat as a change.
+ *
+ * The flavour dimensions moved to `test/unit/domain/flavor.test.ts` in Phase 2,
+ * along with the module itself: they are domain knowledge a pattern renders,
+ * not a property of the pattern.
  */
 
 describe('toCsv', () => {
@@ -92,35 +95,5 @@ describe('diffJson', () => {
     const entries = diffJson({ a: 1, b: 2, same: 0 }, { a: 9, c: 3, same: 0 });
 
     expect(countChanges(entries)).toEqual({ added: 1, removed: 1, changed: 1 });
-  });
-});
-
-describe('flavour profile', () => {
-  it('keeps the canonical dimension order', () => {
-    // Unity's FlavorAnchorTable is a positional int[10] and the catalogue
-    // export is index-based, so reordering this array silently rewrites every
-    // anchor. Pinned exactly rather than by length.
-    expect(FLAVOR_DIMENSIONS).toEqual([
-      'Salt',
-      'Sweet',
-      'Sour',
-      'Bitter',
-      'Umami',
-      'Heat',
-      'Fat',
-      'Smoke',
-      'Herb',
-      'Acid',
-    ]);
-  });
-
-  it('serialises positionally in that order', () => {
-    const profile = { ...emptyFlavorProfile(), Salt: 72, Acid: 30 };
-
-    expect(toFlavorArray(profile)).toEqual([72, 0, 0, 0, 0, 0, 0, 0, 0, 30]);
-  });
-
-  it('starts a new dish at all zeroes', () => {
-    expect(toFlavorArray(emptyFlavorProfile())).toEqual(Array.from({ length: 10 }, () => 0));
   });
 });

@@ -9,6 +9,7 @@ import { Sparkline } from '@/components/charts/Sparkline';
 import { StackedBar } from '@/components/charts/StackedBar';
 import type { ChartSeries } from '@/components/charts/chart';
 import { Section, Specimen, SpecimenGroup } from '@/design/gallery/Specimen';
+import { FLAVOR_DIMENSIONS, FLAVOR_DIMENSION_LABELS } from '@/domain/flavor';
 
 /**
  * Fixture data derived from the seed values the plan names, so the gallery
@@ -48,19 +49,15 @@ const TIERS = [
   { key: 'beloved', label: 'Beloved', value: 118 },
 ] as const;
 
-/** The canonical FlavorDimension order — never sorted, the reading depends on it. */
-const FLAVOUR_AXES = [
-  'Salt',
-  'Sweet',
-  'Sour',
-  'Bitter',
-  'Umami',
-  'Heat',
-  'Fat',
-  'Smoke',
-  'Herb',
-  'Acid',
-] as const;
+/**
+ * The canonical FlavorDimension order — never sorted, the reading depends on it.
+ *
+ * Derived rather than restated: a second copy of this list is exactly how the
+ * gallery ended up specimen-ing ten dimensions the backend has never heard of.
+ */
+const FLAVOUR_AXES: readonly string[] = FLAVOR_DIMENSIONS.map(
+  (dimension) => FLAVOR_DIMENSION_LABELS[dimension],
+);
 
 const PROFILES: readonly ChartSeries[] = [
   {

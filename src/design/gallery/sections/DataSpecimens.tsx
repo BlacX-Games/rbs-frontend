@@ -8,7 +8,7 @@ import { DetailDrawer } from '@/components/patterns/DetailDrawer';
 import { FilterBar } from '@/components/patterns/FilterBar';
 import { FlavorProfileEditor } from '@/components/patterns/FlavorProfileEditor';
 import { JsonDiff } from '@/components/patterns/JsonDiff';
-import { emptyFlavorProfile, type FlavorProfile } from '@/components/patterns/flavor';
+import { emptyFlavorProfile, type FlavorProfile } from '@/domain/flavor';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { Select } from '@/components/primitives/Select';
@@ -87,10 +87,10 @@ export function DataSpecimens() {
   const [selected, setSelected] = useState<readonly string[]>(['s1']);
   const [profile, setProfile] = useState<FlavorProfile>(() => ({
     ...emptyFlavorProfile(),
-    Salt: 72,
+    Salty: 72,
     Umami: 88,
-    Smoke: 94,
-    Fat: 76,
+    Smoky: 94,
+    'Fatty/Rich': 76,
   }));
 
   return (

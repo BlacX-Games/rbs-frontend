@@ -2,11 +2,17 @@ import { RadarChart } from '@/components/charts/RadarChart';
 import type { SeriesSlot } from '@/components/charts/chart';
 import {
   FLAVOR_DIMENSIONS,
+  FLAVOR_DIMENSION_LABELS,
   type FlavorDimension,
   type FlavorProfile,
-} from '@/components/patterns/flavor';
+} from '@/domain/flavor';
 import { NumberInput } from '@/components/primitives/NumberInput';
 import { cn } from '@/lib/cn';
+
+/** Canonical order, humanised once. Module-scoped so it is not rebuilt per render. */
+const FLAVOR_AXES: readonly string[] = FLAVOR_DIMENSIONS.map(
+  (dimension) => FLAVOR_DIMENSION_LABELS[dimension],
+);
 
 export type FlavorProfileEditorProps = {
   readonly label: string;
@@ -55,7 +61,13 @@ export function FlavorProfileEditor({
     key,
     label: seriesLabel,
     slot: seriesSlot,
-    points: FLAVOR_DIMENSIONS.map((dimension) => ({ x: dimension, y: profile[dimension] })),
+    // Axis identity is the LABEL, not the wire key, so `'Fatty/Rich'` reads as
+    // "Fatty / Rich" on the chart. `x` and `axes` must agree, which is why both
+    // go through the same record rather than one being humanised at render.
+    points: FLAVOR_DIMENSIONS.map((dimension) => ({
+      x: FLAVOR_DIMENSION_LABELS[dimension],
+      y: profile[dimension],
+    })),
   });
 
   const series = [
@@ -69,7 +81,7 @@ export function FlavorProfileEditor({
     <div className={cn('flex flex-col gap-16 md:flex-row md:items-start', className)}>
       <div className="min-w-0 flex-1">
         <RadarChart
-          axes={FLAVOR_DIMENSIONS}
+          axes={FLAVOR_AXES}
           chartLabel={chartChartLabel}
           height={280}
           series={series}
@@ -95,7 +107,7 @@ export function FlavorProfileEditor({
             disabled={disabled}
             incrementLabel={stepLabel(dimension, 'Increase')}
             key={dimension}
-            label={dimension}
+            label={FLAVOR_DIMENSION_LABELS[dimension]}
             max={100}
             min={0}
             onValueChange={(next) => {
