@@ -1,0 +1,10 @@
+.claude
+dist
+node_modules
+coverage
+package-lock.json
+docs
+playwright-report
+test-results
+blob-report
+public/mockServiceWorker.js

@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+@import './design/fonts.css';
+@import './design/tokens.css';
+
+/*
+ * Global base. Values belong in tokens.css and everything visual belongs in a
+ * component; a rule earns a place here only if it is arguably true of the whole
+ * document, always.
+ */
+
+@layer base {
+  html {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * §5.4: the focus ring is never removed. Asserted globally as well as offered
+   * as the `focus-ring` utility, so a component that forgets the utility still
+   * gets a visible ring rather than nothing.
+   */
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--gold-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /*
+   * §5.1 principle 4: numbers are typeset. Tables and numeric controls align
+   * digits down the column by default. A standalone hero figure opts back out
+   * with `proportional-nums` — at 48px, proportional figures read better than
+   * a monospaced grid.
+   */
+  table,
+  input,
+  output {
+    font-variant-numeric: tabular-nums;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
