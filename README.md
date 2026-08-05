@@ -8,12 +8,13 @@ This repo builds the **admin surface only**. Player-facing gameplay lives in the
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
 > **Status: Phase 1 in progress — design system.** Stage 1 shipped the §5.2 colour tokens for both
-> themes, the theme and density mechanics, and the three self-hosted faces. **Stage 2 is now
-> complete: all 30 primitives from §5.5**, across three commits — 2a's 17 form and action
-> primitives, 2b-i's 9 Radix-backed overlays and navigation, and 2b-ii's 4 hand-built composites
-> (Combobox, MultiSelect, CommandPalette, DateRangePicker). The gallery renders every one of them
-> in every state, across both themes and both densities. Still to come in Phase 1: stage 3's
-> composed patterns and charts. The router and data layer follow in Phase 2. Full build plan:
+> themes, the theme and density mechanics, and the three self-hosted faces. Stage 2 delivered **all
+> 30 primitives from §5.5**; stage 3a adds **`ChartFrame` and the nine chart types** — Sparkline,
+> Line, Area, Bar, StackedBar, Funnel, Heatmap, Radar, SmallMultiples — each with the mandatory
+> table-view twin. Still to come in Phase 1: 3b's readout patterns (StatTile, MetricCard,
+> HealthMeter, ScoreDial, the three states) and 3c's data patterns (DataTable, FilterBar,
+> AuditTrail, JsonDiff, ConfirmDialog, FlavorProfileEditor, DetailDrawer). The router and data
+> layer follow in Phase 2. Full build plan:
 > [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
@@ -74,6 +75,9 @@ src/
     gallery/                       every primitive in every state (→ /design in Phase 2)
   components/primitives/           the §5.5 primitives, one file each
     internal/                      shared class records, Field shell, useFieldIds
+  components/charts/               ChartFrame + the nine visx chart types
+    chart.ts                       series types, slot→var(--series-N), mark specs
+    internal/                      axes, the table-view twin
   lib/cn.ts · env.ts               class joiner; Zod-validated build config
 public/fonts/                      committed WOFF2 + OFL licences (no CDN)
 scripts/fetch-fonts.mjs            reproduces public/fonts from Google Fonts
@@ -146,6 +150,29 @@ matching the §5.4 scale (`2 4 8 12 16 24 32 48 64 96`) rather than Tailwind's u
 The 44px floor is **not** verifiable in Vitest (`css: false` means no stylesheet loads) and **not**
 catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).
 `e2e/design.matrix.spec.ts` measures real boxes across theme × density and is the only guard.
+
+### Writing a chart
+
+- **Every chart has a table-view twin, and it is not optional.** §5.2's relief rule PASSes
+  `--series-3` (2.77:1) and `--series-5` (2.65:1) on the paper theme _only on condition_ that a
+  chart using them ships visible labels or a table view. `ChartFrame` renders the toggle, so a chart
+  built through it cannot ship without one.
+- **Slots belong to entities, never to array position.** `seriesColor(slot)` returns the string
+  `var(--series-3)` — there is no colour array in JS to drift from `tokens.css`. Colouring by index
+  means filtering one series repaints the survivors, and a reader who learned "Barbecue is blue" is
+  then misled.
+- **Never a dual y-axis.** Two measures of different scale become two charts, small multiples, or
+  both indexed to a common base. It is the single most misleading thing a chart can do.
+- **Eight slots is the ceiling.** A ninth generated hue is indistinguishable from an existing one
+  under CVD. Fold the tail into "Other", or facet with `SmallMultiples` — which is what §5.2 requires
+  for the ten guest archetypes.
+- **Sequential is one hue light→dark; diverging is two hues plus a neutral gray midpoint.** Never a
+  rainbow, never a hue at the midpoint. `Heatmap` is sequential; `HealthMeter` (3b) is diverging.
+- **Text wears text tokens, never the series colour.** A light categorical hue is illegible as type
+  on the surface. Identity comes from a swatch or line key _beside_ the text.
+- **Marks are fixed** in `chart.ts`'s `MARK`: 2px lines, ≥8px markers, ≤24px bars with a 4px rounded
+  data-end, a 2px surface gap between touching fills, a 2px surface ring on overlapping dots, and a
+  10% area wash. Never a stroke around a mark to separate it — the gap and the ring are the mechanism.
 
 ## Conventions
 

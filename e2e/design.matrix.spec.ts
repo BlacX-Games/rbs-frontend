@@ -183,6 +183,29 @@ test.describe('the design system', () => {
     expect(results.violations).toEqual([]);
   });
 
+  test('has no axe violations with a chart in its table view', async ({ page }) => {
+    await page.goto('/');
+
+    // The table twin is a whole second rendering — headers, row headers, and a
+    // swatch per column — that the default pass never sees, because charts open
+    // as charts.
+    const toggle = page.getByRole('button', { name: 'Show as table' });
+    const total = await toggle.count();
+
+    expect(total).toBeGreaterThan(0);
+
+    // Always `.first()`, never a snapshotted list. Clicking a toggle renames it
+    // to "Show as chart", so the matching set shrinks under the loop and an
+    // `nth(i)` locator eventually resolves to nothing.
+    for (let index = 0; index < total; index += 1) await toggle.first().click();
+
+    await expect(toggle).toHaveCount(0);
+
+    const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
   test('offers a skip link as the first focusable element', async ({ page }) => {
     await page.goto('/');
     await page.keyboard.press('Tab');
