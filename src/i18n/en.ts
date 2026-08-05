@@ -73,6 +73,8 @@ export const en = {
   'signin.email': 'Email',
   'signin.password': 'Password',
   'signin.submit': 'Sign in',
+  'signin.showPassword': 'Show password',
+  'signin.hidePassword': 'Hide password',
   'signin.submitting': 'Signing in…',
   'signin.invalid': 'That email and password do not match an operator account.',
   'signin.emailRequired': 'Enter your email.',
@@ -106,8 +108,23 @@ export const en = {
     'This screen needs a role your account does not hold. Ask an owner if you need it.',
   'state.notFound.title': 'No such screen',
   'state.notFound.description': 'That URL does not match anything in this console.',
-  'state.phase.title': '{screen} arrives in {phase}',
-  'state.phase.description': '{detail}',
+  'state.crash.title': 'This screen stopped working',
+  'state.crash.description':
+    'Something in the console failed rather than the data behind it. Reloading usually clears it; tell an engineer if it does not.',
+
+  /* ── Phase placeholders ─────────────────────────────────────────────── */
+  'state.phase.title': 'Not built yet',
+  'state.phase.route': '{screen} arrives in {phase}.',
+  'state.phase.ops': 'Phase 5 — Live Ops',
+  'state.phase.catalog': 'Phase 6 — Content Catalog',
+  'state.phase.balancing': 'Phase 7 — Balancing & Formula Studio',
+  'state.phase.insights1': 'Phase 8 — Insights, stage 1',
+  'state.phase.insights2': 'Phase 9 — Insights, stage 2',
+  'state.phase.backend': 'the backend admin phases',
+  'state.phase.blocked':
+    'This one is also gated on data the backend has not built yet — there is no telemetry or AI-cost table to read.',
+  'state.phase.backendNote':
+    'rbs-backend has no admin API yet, so this screen has nothing to read until it does.',
 
   /* ── Pagination ─────────────────────────────────────────────────────── */
   'pagination.label': 'Pagination',
@@ -130,6 +147,53 @@ export const en = {
   /* ── Decision flags (golden rule 5) ─────────────────────────────────── */
   'decision.label': 'Needs decision',
   'decision.detail': 'This value is unresolved in the design docs — do not treat it as settled.',
+
+  /* ── Route labels (§4) ──────────────────────────────────────────────── */
+  'route.insights': 'Overview',
+  'route.insights.economy': 'Economy',
+  'route.insights.progression': 'Progression',
+  'route.insights.content': 'Content performance',
+  'route.insights.system': 'System health',
+  'route.insights.moments': 'Emotional moments',
+  'route.insights.aiCost': 'AI cost',
+
+  'route.ops': 'Today',
+  'route.ops.players': 'Players',
+  'route.ops.player': 'Player',
+  'route.ops.restaurants': 'Restaurants',
+  'route.ops.restaurant': 'Restaurant',
+  'route.ops.sessions': 'Services',
+  'route.ops.session': 'Service',
+  'route.ops.reviews': 'Reviews',
+
+  'route.catalog': 'Catalog home',
+  'route.catalog.concepts': 'Concepts',
+  'route.catalog.concept': 'Concept',
+  'route.catalog.dishes': 'Dishes',
+  'route.catalog.dish': 'Dish',
+  'route.catalog.drinks': 'Drinks',
+  'route.catalog.drink': 'Drink',
+  'route.catalog.staff': 'Staff templates',
+  'route.catalog.ambience': 'Ambience presets',
+  'route.catalog.flavorAnchors': 'Flavour anchors',
+  'route.catalog.starterKits': 'Starter kits',
+  'route.catalog.export': 'Export',
+
+  'route.balancing': 'Studio',
+  'route.balancing.tiers': 'Tiers',
+  'route.balancing.reputation': 'Reputation',
+  'route.balancing.morale': 'Morale',
+  'route.balancing.events': 'Events',
+  'route.balancing.economy': 'Economy targets',
+  'route.balancing.tune': 'Tune register',
+  'route.balancing.simulate': 'Simulate',
+  'route.balancing.versions': 'Versions',
+
+  'route.system.audit': 'Audit trail',
+  'route.system.admins': 'Operators',
+  'route.system.settings': 'Settings',
+
+  'route.design': 'Design system',
 
   /* ── Error codes the backend actually emits ─────────────────────────── */
   'error.unknown': 'Something went wrong. Try again, and tell an engineer if it repeats.',

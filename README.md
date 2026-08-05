@@ -7,17 +7,20 @@ talking to the `/admin/v1` surface of [`rbs-backend`](../rbs-backend).
 This repo builds the **admin surface only**. Player-facing gameplay lives in the Unity client
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
-> **Status: Phase 1 complete — the design system.** Every §5 decision is encoded and provable: the
-> §5.2 colour tokens for both themes, theme and density mechanics, three self-hosted faces, **all 30
-> primitives**, **`ChartFrame` + 9 chart types**, **all 15 composed patterns**, the gallery rendering
-> every one of them in both themes at both densities, a Vitest suite that re-derives every published
-> contrast ratio and ΔE gate from the shipped CSS, axe across the theme × density matrix, and
-> baselined visual-regression snapshots.
+> **Status: Phase 2 stage 3 — a navigable console.** Phase 1's design system (§5.2 tokens for both
+> themes, all 30 primitives, `ChartFrame` + 9 charts, all 15 patterns, the contrast/ΔE suites, axe
+> across theme × density, baselined snapshots) now sits under an actual application: the §4 route
+> tree, the app shell, sign-in, `AdminApi` over a single fetch wrapper, and an MSW mock network that
+> **enforces the role matrix** rather than answering everything asked of it.
 >
-> **Next: Phase 2 — app shell and data layer.** Router, the §4 route tree, sign-in, `AdminApi`, and
-> the MSW mock network. That is the phase that turns this from a component gallery into a navigable
-> dashboard. Note that `rbs-backend` has no admin API yet (§1.2), so Phase 2 runs on mocks until the
-> backend's own Phases 3–4 land. Full build plan:
+> `rbs-backend` has no admin API and no phase that promises one — a full-text search of its `src/`,
+> `docs/`, `prisma/`, `CLAUDE.md`, and git history returns zero occurrences of `admin`. So
+> `src/mocks/handlers.ts` is not a placeholder for a specification; it **is** the specification, and
+> the work-order that repo will be handed.
+>
+> **Next: Phase 2 stage 4 — the Live Ops proving slice.** `/ops` and `/ops/players` on real mock
+> data, with filter state in typed URL search params. Every other §4 route already resolves and
+> renders a placeholder naming the phase that builds it. Full build plan:
 > [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
@@ -69,22 +72,44 @@ no CORS middleware until its own Phase 3.
 
 ```
 src/
-  main.tsx · App.tsx · app.css     entry, the gallery page, Tailwind pipeline
+  main.tsx · router.tsx · app.css  entry, the router, Tailwind pipeline
+  routes/                          file-based routes mirroring §4 (routeTree.gen.ts is generated)
+    __root.tsx                     providers, skip link, crash boundary, 404
+    _console.tsx                   the auth wall + AppShell; pathless, so URLs stay §4's
+    signin.tsx · design.tsx        the two routes outside the wall
+  app/
+    AppShell · NavRail · TopBar    rail, breadcrumb, ⌘K, environment badge, account menu
+    navigation.ts                  THE route table — rail, palette, breadcrumb, and guard read it
+    RequireCapability · PhasePlaceholder
+  api/
+    client.ts                      the one fetch: bearer, refresh-on-401, error envelope, schema parse
+    adapter.ts · endpoints.ts      the AdminApi contract, and its one implementation
+    session.ts · queries.ts        the in-memory token; query keys, invalidation, client defaults
+  domain/
+    enums.ts · flavor.ts           wire value → display label; the ten canonical dimensions
+    schemas/ · types.ts            Zod is the source; types are inferred from it
+  mocks/
+    handlers.ts · fixtures.ts      the /admin/v1 spec, and a deterministic universe
+  i18n/
+    en.ts · t.ts · format.ts       the catalogue; key + params checked at compile time
   design/
     tokens.css                     THE source of truth for colour — both themes
     fonts.css                      @font-face for the three self-hosted faces
     theme.ts · theme-context.ts    preferences, storage, resolution
     ThemeProvider.tsx              provider; ThemeControls.tsx toggles
-    gallery/                       every primitive in every state (→ /design in Phase 2)
+    gallery/                       every primitive in every state — served at /design
   components/primitives/           the §5.5 primitives, one file each
     internal/                      shared class records, Field shell, useFieldIds
   components/charts/               ChartFrame + the nine visx chart types
     chart.ts                       series types, slot→var(--series-N), mark specs
     internal/                      axes, the table-view twin
   components/patterns/             the 15 §5.5 composed patterns
-    flavor.ts                      the ten dimensions, in canonical order
     internal/                      tier bands, CSV escaping, the JSON diff
-  lib/cn.ts · env.ts               class joiner; Zod-validated build config
+  lib/
+    money.ts                       exact decimal arithmetic — no float ever touches a currency
+    number.ts                      roundHalfUp, away from zero, mirroring Unity
+    permissions.ts · ratelimit.ts  the §8.2 matrix; the draft-8 headers
+    cn.ts · env.ts                 class joiner; Zod-validated build config
 public/fonts/                      committed WOFF2 + OFL licences (no CDN)
 scripts/fetch-fonts.mjs            reproduces public/fonts from Google Fonts
 test/                              Vitest — support/ helpers, unit/ suites
@@ -96,8 +121,8 @@ There is deliberately **no `index.ts` barrel** under `primitives/`. Import each 
 (`@/components/primitives/Button`) so a test pulling in one component does not drag all seventeen —
 and so `patterns/` cannot start an import cycle in stage 3.
 
-The target layout — `routes/`, `domain/`, `api/`, `mocks/`, `components/`, `features/` — is
-specified in §7.2 of the plan and fills in as the phases land.
+`features/` is the one part of §7.2's target layout still empty; it fills in from Phase 5, when the
+modules get real screens.
 
 ### Working with the design system
 
@@ -156,6 +181,33 @@ matching the §5.4 scale (`2 4 8 12 16 24 32 48 64 96`) rather than Tailwind's u
 The 44px floor is **not** verifiable in Vitest (`css: false` means no stylesheet loads) and **not**
 catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).
 `e2e/design.matrix.spec.ts` measures real boxes across theme × density and is the only guard.
+
+### Working with the router and the shell
+
+- **`src/app/navigation.ts` is the route table**, and four things read it: the rail, the breadcrumb,
+  the ⌘K palette, and the capability guard. Adding a screen means adding a row there _and_ a file
+  under `src/routes/`. A route file without a row still resolves, and `AppShell` gates it on
+  `ops.read` — fail-closed, so the mistake surfaces as a `ForbiddenState` for an analyst rather than
+  as a screen open to every role.
+- **`routeTree.gen.ts` is generated and gitignored.** `@tanstack/router-plugin` rebuilds it on `dev`
+  and on `build`, so a fresh clone produces it before anything imports it. Same reasoning as
+  `rbs-backend`'s gitignored `openapi.json`: derived files go stale, and a committed one is a diff on
+  every branch that adds a route.
+- **Two ESLint rules are off under `src/routes/**`**, and only there. Every route file must export a
+  `Route` object beside its component (`react-refresh/only-export-components`), and `beforeLoad`
+  signals a redirect with `throw redirect({…})`, which is not an `Error`
+  (`@typescript-eslint/only-throw-error`). Both are TanStack's contract, not our style.
+- **Hiding a rail entry is not a permission check.** §7.4: a forbidden route still resolves and
+  renders `ForbiddenState`. Someone who bookmarked a screen before their role changed gets an
+  explanation, not a blank page — and the server refuses the data either way.
+- **The access token lives in a module variable and nowhere else.** Never `localStorage`, never
+  `sessionStorage`. A reload loses it, which is what the httpOnly refresh cookie is for; a readable
+  `rbs_admin_session` hint cookie rides beside it so an anonymous load does not spend an
+  `/auth/*` rate-limit slot discovering there is no session.
+- **The app does not render synchronously.** `main.tsx` awaits the MSW worker before the first
+  render, so the router's `beforeLoad` cannot fire a request the worker is not yet intercepting. In
+  Playwright, `expect(locator)` auto-waits and does not care; `locator.count()`, `locator.all()`, and
+  `keyboard.press()` do — use `appReady(page)` from `e2e/fixtures.ts` before any of those.
 
 ### Visual regression
 

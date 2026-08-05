@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, type Page } from '@playwright/test';
 
 /**
  * Seeds the density preference the running project asks for.
@@ -40,3 +40,21 @@ export const test = base.extend<{ density: 'comfortable' | 'compact' }>({
 });
 
 export { expect } from '@playwright/test';
+
+/**
+ * Waits for React to have mounted.
+ *
+ * Needed because the app no longer renders synchronously on `load`: `main.tsx`
+ * awaits the MSW service worker before the first render, so that the router's
+ * `beforeLoad` cannot fire a request the worker is not yet intercepting.
+ *
+ * Playwright's `expect(locator)` auto-waits and does not care. `locator.all()`,
+ * `locator.count()`, and `keyboard.press()` do NOT — they read the DOM as it is
+ * right now, which after `goto()` is an empty `#root`. A test that skips this
+ * fails as "the feature is broken" when it is only early.
+ */
+export async function appReady(page: Page): Promise<void> {
+  // Every screen renders a `<main id="main">` — it is the skip link's target,
+  // so it is the one element guaranteed to exist once anything has rendered.
+  await base.expect(page.locator('#main')).toBeVisible();
+}

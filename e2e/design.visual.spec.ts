@@ -72,7 +72,7 @@ for (const colorScheme of ['dark', 'light'] as const) {
        * itself is asserted in design.matrix.spec.ts against a computed style.
        */
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
-      await page.goto('/');
+      await page.goto('/design');
 
       // The three faces are self-hosted and arrive after first paint. Without
       // this the first run snapshots a fallback face and every later run

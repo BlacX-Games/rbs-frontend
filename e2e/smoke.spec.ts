@@ -12,8 +12,20 @@ const WCAG_AA_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const DARK_CANVAS = 'rgb(12, 11, 10)';
 const PAPER_CANVAS = 'rgb(245, 239, 224)';
 
+/**
+ * ── Where these tests point, after Phase 2 stage 3 ──────────────────────────
+ * `/` was the design gallery through Phase 1. It is now a redirect to
+ * `/insights`, which sits behind the auth wall — so a cold visit lands on
+ * `/signin`, and that is what "boots" means for an operator now.
+ *
+ * The theme and density mechanics moved to `/design`, because that is where the
+ * toggles live outside the shell. Sign-in deliberately carries neither: it is
+ * the one screen shown before we know who is looking, and a preference control
+ * there would be the first thing an operator saw.
+ */
+
 test.describe('operator console shell', () => {
-  test('boots clean', async ({ page }) => {
+  test('boots clean, and a cold visit lands on sign-in', async ({ page }) => {
     const problems: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') problems.push(message.text());
@@ -22,6 +34,10 @@ test.describe('operator console shell', () => {
 
     await page.goto('/');
 
+    // Four things at once, which is why it is the first test: the router
+    // mounted, `/` redirected, the auth guard ran, and the mock network was
+    // already intercepting when the guard called `/auth/refresh`.
+    await expect(page).toHaveURL(/\/signin/);
     await expect(page).toHaveTitle(/Operator Console/);
     await expect(page.getByRole('heading', { level: 1, name: 'Operator Console' })).toBeVisible();
     expect(problems).toEqual([]);
@@ -30,11 +46,9 @@ test.describe('operator console shell', () => {
   test('applies the Tailwind pipeline through the design tokens', async ({ page }) => {
     // Proves utilities are compiled and served, not merely imported — a broken
     // Tailwind plugin renders an unstyled page that still passes every other
-    // assertion here. Phase 0 asserted a literal hex against the default theme;
-    // now the value has to arrive through `bg-canvas` → `var(--bg-canvas)` →
-    // tokens.css, and the theme it resolves under is stated rather than assumed.
+    // assertion here.
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('/');
+    await page.goto('/signin');
 
     await expect(page.locator('main')).toHaveCSS('background-color', DARK_CANVAS);
   });
@@ -53,28 +67,34 @@ test.describe('operator console shell', () => {
       served.set(new URL(response.url()).pathname, response.status()),
     );
 
-    await page.goto('/');
+    await page.goto('/signin');
 
     // §5.3: no CDN. A font request to a third party leaks, in the referrer
     // alone, which console an operator is using — which the GDD's
     // privacy-first stance rules out.
     expect(thirdParty).toEqual([]);
 
-    // Both preloaded faces actually arrive. Asserting the computed
-    // `font-family` alone would pass even if every .woff2 404'd, because the
-    // cascade falls through to the local fallback stack silently.
     for (const face of ['inter-latin-variable', 'fraunces-latin-variable']) {
       expect(served.get(`/fonts/${face}.woff2`), face).toBe(200);
     }
 
     await expect(page.locator('h1')).toHaveCSS('font-family', /Fraunces/);
   });
+
+  test('renders a real 404 for a URL that is not a screen', async ({ page }) => {
+    await page.goto('/ops/nothing-here');
+
+    // Outside the shell on purpose: a 404 framed by the rail reads as "this
+    // screen exists and is empty".
+    await expect(page.getByText('No such screen')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
+  });
 });
 
 test.describe('theme mechanics (§5.2)', () => {
   test('follows the OS preference when the operator has expressed none', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.goto('/');
+    await page.goto('/design');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await expect(page.locator('main')).toHaveCSS('background-color', PAPER_CANVAS);
 
@@ -86,7 +106,7 @@ test.describe('theme mechanics (§5.2)', () => {
 
   test('lets an explicit choice beat the OS in both directions', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('/');
+    await page.goto('/design');
 
     await page.getByRole('radio', { name: 'Paper' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
@@ -104,40 +124,46 @@ test.describe('theme mechanics (§5.2)', () => {
 
   test('applies the stored theme before first paint', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('radio', { name: 'Dark' }).click();
 
     // The pre-paint script's whole reason to exist: on a cold load the stored
     // theme must already be on <html> when the document commits, not applied
     // afterwards by React. `waitUntil: 'commit'` returns before the module
     // graph has run, so only the inline script can have set this.
-    await page.goto('/', { waitUntil: 'commit' });
+    await page.goto('/design', { waitUntil: 'commit' });
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
 
-  test('switches density, and comfortable meets the 44px tap-target floor', async ({ page }) => {
-    await page.goto('/');
+  test('switches density and persists the choice', async ({ page }) => {
+    await page.goto('/design');
 
     await expect(page.locator('html')).toHaveAttribute('data-density', 'comfortable');
-    const comfortable = await page.locator('tbody tr').first().boundingBox();
-    expect(comfortable?.height).toBeGreaterThanOrEqual(44);
-
     await page.getByRole('radio', { name: 'Compact' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
-    const compact = await page.locator('tbody tr').first().boundingBox();
-    expect(compact?.height).toBeLessThan(comfortable?.height ?? Number.POSITIVE_INFINITY);
+
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
+
+    // What the density MEASURES is asserted in design.matrix.spec.ts, which
+    // walks every row of a real DataTable in all four theme × density
+    // combinations. Phase 1 duplicated a weaker version of that here only
+    // because App.tsx carried its own two-row table; App.tsx is gone, and one
+    // measured 44px floor beats a second, shallower one.
   });
 });
 
 test.describe('accessibility', () => {
   for (const colorScheme of ['dark', 'light'] as const) {
-    test(`has no violations in the ${colorScheme} theme`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme });
-      await page.goto('/');
+    for (const path of ['/signin', '/design']) {
+      test(`has no violations on ${path} in the ${colorScheme} theme`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto(path);
 
-      const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
+        const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
 
-      expect(results.violations).toEqual([]);
-    });
+        expect(results.violations).toEqual([]);
+      });
+    }
   }
 });

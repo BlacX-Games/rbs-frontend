@@ -111,3 +111,47 @@ export function clearSession(): void {
   snapshot = null;
   emit();
 }
+
+/**
+ * Name of the readable companion to the httpOnly refresh cookie.
+ *
+ * ── Why a second cookie exists at all ───────────────────────────────────────
+ * The refresh cookie is httpOnly, so this bundle cannot tell whether one is
+ * present. Without a hint, the only way to answer "is anyone signed in?" on a
+ * cold load is to POST `/auth/refresh` and see — which means EVERY anonymous
+ * page load sends a request that 401s.
+ *
+ * That is not merely noisy. `rbs-backend`'s `authLimiter` is 20 requests per
+ * 15 minutes per IP on `/auth/*`, with `skipSuccessfulRequests: true` — so only
+ * the failures count. Twenty anonymous loads from one office IP would rate-limit
+ * sign-in for everyone behind it, and the console would be locked out by its own
+ * boot sequence.
+ *
+ * ── Why it is safe to make it readable ─────────────────────────────────────
+ * It carries no credential and no PII — its PRESENCE is the entire signal, and
+ * its value is a constant. Reading it tells an attacker that this browser has a
+ * session, which they can already infer from the console being open. The thing
+ * worth protecting is the 60-day refresh token, and that stays httpOnly.
+ *
+ * ── This is an addition to the §8.3 work-order ─────────────────────────────
+ * The real backend must set and clear it alongside the refresh cookie, with the
+ * same lifetime and `SameSite=Strict`, and WITHOUT `HttpOnly`. If it does not,
+ * this degrades safely: `hasSessionHint()` returns false, and the console asks
+ * for a sign-in that the operator's cookie would have made unnecessary.
+ */
+export const SESSION_HINT_COOKIE = 'rbs_admin_session';
+
+/**
+ * Does this browser claim to hold a refresh session?
+ *
+ * A HINT, never an authorization: it is trivially forgeable, and forging it
+ * buys an attacker one `/auth/refresh` that returns 401. The guard treats a
+ * true here as "worth asking", never as "signed in".
+ */
+export function hasSessionHint(): boolean {
+  if (typeof document === 'undefined') return false;
+
+  return document.cookie
+    .split(';')
+    .some((entry) => entry.trim().startsWith(`${SESSION_HINT_COOKIE}=`));
+}

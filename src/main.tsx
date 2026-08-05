@@ -1,7 +1,7 @@
+import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from '@/App';
-import { ThemeProvider } from '@/design/ThemeProvider';
+import { router } from '@/router';
 import { env } from '@/lib/env';
 import './app.css';
 
@@ -17,13 +17,14 @@ if (!rootElement) {
  * The mock network starts BEFORE React mounts, and the `await` is load-bearing.
  *
  * `worker.start()` resolves only once the service worker is actually
- * intercepting. Rendering first would let the first wave of queries race that
- * registration, and a request that slips past lands on the Vite dev server as a
- * 404 — indistinguishable, on screen, from an endpoint we forgot to write.
+ * intercepting. Rendering first would let the router's own `beforeLoad` — which
+ * calls `/auth/refresh` on the very first navigation — race that registration,
+ * and a request that slips past lands on the Vite dev server as a 404. The
+ * operator would be bounced to sign-in on a session that was perfectly valid.
  *
  * Dynamic import so `src/mocks/` and its fixtures never enter a production
- * bundle: with `VITE_USE_MOCKS=false` this branch is dead code, and Rolldown
- * splits the whole mock network into a chunk nothing loads.
+ * bundle: with `VITE_USE_MOCKS=false` this branch is dead code, and the whole
+ * mock network splits into a chunk nothing loads.
  */
 async function bootstrap(): Promise<void> {
   if (env.useMocks) {
@@ -33,9 +34,7 @@ async function bootstrap(): Promise<void> {
 
   createRoot(rootElement as HTMLElement).render(
     <StrictMode>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
+      <RouterProvider router={router} />
     </StrictMode>,
   );
 }

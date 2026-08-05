@@ -3,6 +3,7 @@ import type { Capability } from '@/lib/permissions';
 import { can } from '@/lib/permissions';
 import { env } from '@/lib/env';
 import { sumMoney, toMinorUnits } from '@/lib/money';
+import { SESSION_HINT_COOKIE } from '@/api/session';
 import type { Operator, OpsAlert, Review } from '@/domain/types';
 import { MOCK_OPERATORS, universe } from '@/mocks/fixtures';
 import { FIXTURE_NOW } from '@/mocks/random';
@@ -44,6 +45,17 @@ const BASE = `${env.apiBaseUrl}/admin/v1`;
  * fail an audit it was supposed to help pass.
  */
 const REFRESH_COOKIE = 'rbs_admin_refresh';
+
+/**
+ * Set and cleared in lockstep with the refresh cookie, exactly as the real
+ * backend must (§8.3, extended). The console reads this — never the refresh
+ * cookie — to decide whether a cold load is worth a restore attempt.
+ */
+function writeSessionCookies(playerId: string | null): void {
+  const maxAge = playerId === null ? 0 : REFRESH_TTL_SECONDS;
+  writeCookie(REFRESH_COOKIE, playerId ?? '', maxAge);
+  writeCookie(SESSION_HINT_COOKIE, playerId === null ? '' : '1', maxAge);
+}
 
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -309,7 +321,7 @@ export const handlers: readonly HttpHandler[] = [
       return fail(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
     }
 
-    writeCookie(REFRESH_COOKIE, operator.id, REFRESH_TTL_SECONDS);
+    writeSessionCookies(operator.id);
 
     return HttpResponse.json({
       accessToken: mintAccessToken(operator),
@@ -335,7 +347,7 @@ export const handlers: readonly HttpHandler[] = [
     // Rotation, as the real flow does. The value does not change here because
     // there is nothing to steal, but the cookie's lifetime is extended — which
     // is the behaviour an operator feels.
-    writeCookie(REFRESH_COOKIE, operator.id, REFRESH_TTL_SECONDS);
+    writeSessionCookies(operator.id);
 
     return HttpResponse.json({
       accessToken: mintAccessToken(operator),
@@ -350,7 +362,7 @@ export const handlers: readonly HttpHandler[] = [
   }),
 
   http.post(`${BASE}/auth/logout`, () => {
-    writeCookie(REFRESH_COOKIE, '', 0);
+    writeSessionCookies(null);
     return new HttpResponse(null, { status: 204 });
   }),
 
@@ -735,5 +747,5 @@ export const handlers: readonly HttpHandler[] = [
  */
 export function resetMockState(): void {
   reviewEdits.clear();
-  writeCookie(REFRESH_COOKIE, '', 0);
+  writeSessionCookies(null);
 }

@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 
@@ -15,7 +16,27 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
 
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      /*
+       * MUST come before `react()`. The plugin rewrites route files, and the
+       * React plugin's Fast Refresh transform has to see the rewritten output —
+       * reversed, HMR reloads a module the router no longer recognises and the
+       * dev server serves a blank page until a hard refresh.
+       */
+      tanstackRouter({
+        target: 'react',
+        // Generated, and the repo's only generated file. Excluded from ESLint,
+        // Prettier, and git — see .gitignore for why it is not committed.
+        generatedRouteTree: './src/routeTree.gen.ts',
+        routesDirectory: './src/routes',
+        // Every route becomes its own chunk. §9 Phase 10 sets a 250KB initial
+        // JS budget, and a 42-route console that ships every screen to open the
+        // sign-in page cannot meet it. Free here, expensive to retrofit.
+        autoCodeSplitting: true,
+      }),
+      react(),
+      tailwindcss(),
+    ],
 
     resolve: {
       // Mirrors `paths` in tsconfig.app.json. Both must move together.

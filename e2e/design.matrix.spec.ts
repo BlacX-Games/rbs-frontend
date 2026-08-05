@@ -1,7 +1,7 @@
 // Named import, not default — see the note in smoke.spec.ts.
 import { AxeBuilder } from '@axe-core/playwright';
 // Explicit .js extension: e2e builds under `moduleResolution: nodenext`.
-import { expect, test } from './fixtures.js';
+import { appReady, expect, test } from './fixtures.js';
 
 /**
  * The design system across theme × density, in a real browser.
@@ -47,7 +47,7 @@ const CONTROL_ROLES = [
 
 test.describe('the design system', () => {
   test('gives every control the density it was asked for', async ({ page, density }) => {
-    await page.goto('/');
+    await page.goto('/design');
 
     const floor = density === 'comfortable' ? 44 : 32;
     const undersized: string[] = [];
@@ -79,7 +79,7 @@ test.describe('the design system', () => {
   });
 
   test('has no axe violations', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
 
     const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
 
@@ -87,7 +87,7 @@ test.describe('the design system', () => {
   });
 
   test('has no axe violations with an overlay open', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
 
     // A closed overlay is unmounted, so the pass above never sees a portalled
     // surface at all — the dialog, its scrim, and its focus guards are exactly
@@ -101,7 +101,7 @@ test.describe('the design system', () => {
   });
 
   test('keeps a dialog control at the density floor', async ({ page, density }) => {
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('button', { name: 'Open delete dialog' }).click();
 
     const dialog = page.getByRole('dialog');
@@ -121,7 +121,7 @@ test.describe('the design system', () => {
   });
 
   test('keeps every day of the calendar at the density floor', async ({ page, density }) => {
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('button', { name: /Session dates/ }).click();
 
     const grid = page.getByRole('grid');
@@ -144,7 +144,7 @@ test.describe('the design system', () => {
   });
 
   test('has no axe violations with the calendar open', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('button', { name: /Session dates/ }).click();
     await expect(page.getByRole('grid')).toBeVisible();
 
@@ -157,7 +157,7 @@ test.describe('the design system', () => {
   });
 
   test('costs one Tab to leave the calendar grid', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('button', { name: /Session dates/ }).click();
 
     const grid = page.getByRole('grid');
@@ -172,7 +172,7 @@ test.describe('the design system', () => {
   });
 
   test('has no axe violations with the command palette open', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('button', { name: 'Open command palette' }).click();
     await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
 
@@ -184,7 +184,8 @@ test.describe('the design system', () => {
   });
 
   test('has no axe violations with a chart in its table view', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
+    await appReady(page);
 
     // The table twin is a whole second rendering — headers, row headers, and a
     // swatch per column — that the default pass never sees, because charts open
@@ -207,7 +208,7 @@ test.describe('the design system', () => {
   });
 
   test('keeps the destructive action locked until the literal is typed', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
     await page.getByRole('button', { name: 'Open destructive confirm' }).click();
 
     const dialog = page.getByRole('alertdialog');
@@ -226,7 +227,7 @@ test.describe('the design system', () => {
   });
 
   test('keeps every table row at the density floor', async ({ page, density }) => {
-    await page.goto('/');
+    await page.goto('/design');
 
     const table = page.getByRole('table', { name: 'Service sessions' });
     await expect(table).toBeVisible();
@@ -244,7 +245,8 @@ test.describe('the design system', () => {
   });
 
   test('offers a skip link as the first focusable element', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/design');
+    await appReady(page);
     await page.keyboard.press('Tab');
 
     const skip = page.getByRole('link', { name: 'Skip to content' });
@@ -259,7 +261,7 @@ test.describe('the design system', () => {
 test.describe('motion and forced colours', () => {
   test('collapses transitions to 1ms under prefers-reduced-motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
+    await page.goto('/design');
 
     // `toHaveCSS` rather than `evaluate`: it reads the real computed style
     // without needing a DOM lib in tsconfig.node.json, and it is the idiom
@@ -273,7 +275,7 @@ test.describe('motion and forced colours', () => {
 
   test('survives forced-colors without axe violations', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active' });
-    await page.goto('/');
+    await page.goto('/design');
 
     const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
 
