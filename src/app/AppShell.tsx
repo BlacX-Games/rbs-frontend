@@ -40,8 +40,20 @@ export function AppShell() {
           The scroll container is here, not on the body: the rail and top bar
           stay put while a fifty-thousand-row table scrolls under them, which is
           what `DataTable`'s sticky header assumes.
+
+          `tabIndex={0}` because a scrollable region MUST be reachable by
+          keyboard — WCAG 2.2 SC 2.1.1. Without it, a screen whose content is
+          all read-only (the Ops home on a quiet day, and most of Insights) can
+          be scrolled with a mouse and not at all with a keyboard: there is no
+          focusable child to carry the caret into the overflow. `DataTable`
+          makes its own scroll region focusable for exactly this reason, and the
+          axe pass on /ops is what caught that the shell did not.
         */}
-        <main className="min-h-0 flex-1 overflow-y-auto px-24 py-24" id="main">
+        <main
+          className="focus-visible:focus-ring min-h-0 flex-1 overflow-y-auto px-24 py-24"
+          id="main"
+          tabIndex={0}
+        >
           {/*
             Mock mode says so, once, in the chrome rather than on each screen.
             An operator reading plausible revenue figures is entitled to know

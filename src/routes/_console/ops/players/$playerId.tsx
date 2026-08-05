@@ -1,6 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PhasePlaceholder } from '@/app/PhasePlaceholder';
+import { PlayerDetail } from '@/features/ops/PlayerDetail';
 
 export const Route = createFileRoute('/_console/ops/players/$playerId')({
-  component: () => <PhasePlaceholder label="route.ops.player" phase="ops" />,
+  component: PlayerDetailRoute,
 });
+
+function PlayerDetailRoute() {
+  const { playerId } = Route.useParams();
+
+  return <PlayerDetail playerId={playerId} />;
+}

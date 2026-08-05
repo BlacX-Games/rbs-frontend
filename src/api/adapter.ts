@@ -107,7 +107,7 @@ export interface AdminApi {
 
   readonly ops: {
     /** The §6.1 home: today's figures, the recent feed, and the anomaly strip. */
-    summary(): Promise<OpsSummary>;
+    summary(signal?: AbortSignal): Promise<OpsSummary>;
   };
 
   readonly players: {

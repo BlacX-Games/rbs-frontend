@@ -7,20 +7,22 @@ talking to the `/admin/v1` surface of [`rbs-backend`](../rbs-backend).
 This repo builds the **admin surface only**. Player-facing gameplay lives in the Unity client
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
-> **Status: Phase 2 stage 3 — a navigable console.** Phase 1's design system (§5.2 tokens for both
-> themes, all 30 primitives, `ChartFrame` + 9 charts, all 15 patterns, the contrast/ΔE suites, axe
-> across theme × density, baselined snapshots) now sits under an actual application: the §4 route
-> tree, the app shell, sign-in, `AdminApi` over a single fetch wrapper, and an MSW mock network that
-> **enforces the role matrix** rather than answering everything asked of it.
+> **Status: Phase 2 complete — a navigable console on live mock data.** Phase 1's design system
+> now sits under an actual application: the §4 route tree, the app shell, sign-in, `AdminApi` over a
+> single fetch wrapper, an MSW mock network that **enforces the role matrix**, and the Live Ops
+> proving slice — `/ops` and `/ops/players` reading real data end to end, with every filter, sort,
+> page cursor, and open drawer in the URL.
 >
 > `rbs-backend` has no admin API and no phase that promises one — a full-text search of its `src/`,
 > `docs/`, `prisma/`, `CLAUDE.md`, and git history returns zero occurrences of `admin`. So
 > `src/mocks/handlers.ts` is not a placeholder for a specification; it **is** the specification, and
 > the work-order that repo will be handed.
 >
-> **Next: Phase 2 stage 4 — the Live Ops proving slice.** `/ops` and `/ops/players` on real mock
-> data, with filter state in typed URL search params. Every other §4 route already resolves and
-> renders a placeholder naming the phase that builds it. Full build plan:
+> Every other §4 route resolves and renders a placeholder naming the phase that builds it, so
+> walking the console tells you what is finished rather than leaving a blank page to interpret.
+>
+> **Next: Phase 3–4 (BE) — admin identity and the cross-tenant read plane**, then Phase 5 turns the
+> Live Ops slice into the full module on real data. Full build plan:
 > [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
@@ -121,8 +123,12 @@ There is deliberately **no `index.ts` barrel** under `primitives/`. Import each 
 (`@/components/primitives/Button`) so a test pulling in one component does not drag all seventeen —
 and so `patterns/` cannot start an import cycle in stage 3.
 
-`features/` is the one part of §7.2's target layout still empty; it fills in from Phase 5, when the
-modules get real screens.
+```
+  features/
+    ops/                           the §6.1 module — home, players list, peek, detail
+```
+
+`features/catalog`, `balancing`, `insights`, and `system` fill in from Phase 6 onward.
 
 ### Working with the design system
 
@@ -208,6 +214,26 @@ catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).
   render, so the router's `beforeLoad` cannot fire a request the worker is not yet intercepting. In
   Playwright, `expect(locator)` auto-waits and does not care; `locator.count()`, `locator.all()`, and
   `keyboard.press()` do — use `appReady(page)` from `e2e/fixtures.ts` before any of those.
+
+### Writing a screen
+
+- **URL state, not component state.** §4: every filter, sort, page cursor — and the open peek
+  drawer — lives in typed search params, so any view is a link. `features/ops/players-search.ts` is
+  the pattern: a Zod schema on the route's `validateSearch`, with `.catch(undefined)` on every
+  field so a stale bookmark degrades to an unfiltered list rather than an error page.
+- **`DataTable` sorts client-side by default and must not for a paginated list.** Pass `sorting` +
+  `onSortingChange` to take control: ordering the loaded fifty rows of seventy-four would present
+  "the oldest account" as the oldest of an arbitrary page.
+- **One request per screen, not one per panel.** A detail route that fires six queries shows six
+  spinners and six independent failures, and the operator watches the page assemble itself.
+- **Money arrives as a string and stays one.** `formatMoney` takes the wire value — `"18"`, unpadded
+  — and formats it exactly. Nothing calls `Number()` on a currency field, including on the way into
+  a chart; `toMinorUnits` is the seam where a figure becomes a coordinate.
+- **`null` is not zero.** A satisfaction average with no services, a percentage with no revenue base
+  — these render as an em dash. `0` would report that every guest hated a service that never ran.
+- **Player email is the only plaintext PII in the schema.** Role-gated behind `gdpr.act`, masked
+  until deliberately revealed per record, absent from the peek drawer entirely, and masked in the
+  CSV export — an export must not become a route around the gate.
 
 ### Visual regression
 

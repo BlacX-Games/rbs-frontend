@@ -306,3 +306,70 @@ describe('<DetailDrawer />', () => {
     expect(within(dialog).getByText('018f2c…')).toBeVisible();
   });
 });
+
+describe('<DataTable /> — server-side sort', () => {
+  it('reports a sort change instead of reordering the rows itself', async () => {
+    const user = userEvent.setup();
+    const onSortingChange = vi.fn();
+
+    renderWithProviders(
+      <DataTable
+        caption="Sessions"
+        columns={COLUMNS}
+        onSortingChange={onSortingChange}
+        rowId={(row) => row.id}
+        rows={SESSIONS}
+        sorting={[]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Covers/ }));
+
+    // `desc: true` on the FIRST click: TanStack opens a numeric column
+    // descending, because "most covers" is the question someone sorting a
+    // number column is usually asking.
+    expect(onSortingChange).toHaveBeenCalledWith([{ id: 'covers', desc: true }]);
+
+    // The rows must NOT have moved: the caller owns the order, and reordering
+    // here would sort the loaded page on top of the server's ordering of the
+    // whole set — so the table would show a sorted page and call it the top of
+    // the list.
+    const rows = within(screen.getByRole('table', { name: 'Sessions' })).getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('The Ember Room');
+  });
+
+  it("renders the caller's sort state, including aria-sort", () => {
+    renderWithProviders(
+      <DataTable
+        caption="Sessions"
+        columns={COLUMNS}
+        onSortingChange={vi.fn()}
+        rowId={(row) => row.id}
+        rows={SESSIONS}
+        sorting={[{ id: 'revenue', desc: true }]}
+      />,
+    );
+
+    // §5.6 asks for aria-sort explicitly — without it the arrow is a picture.
+    expect(screen.getByRole('columnheader', { name: /Revenue/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+  });
+
+  it('still sorts for itself when the caller does not take control', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <DataTable caption="Sessions" columns={COLUMNS} rowId={(row) => row.id} rows={SESSIONS} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Covers/ }));
+
+    // Uncontrolled is still the default: a list that fits in one response has
+    // no reason to round-trip a sort. Trattoria has the most covers, and a
+    // numeric column opens descending.
+    const rows = within(screen.getByRole('table', { name: 'Sessions' })).getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Trattoria');
+  });
+});

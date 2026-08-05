@@ -42,6 +42,22 @@ export type DataTableProps<Row> = {
   readonly selectable?: boolean;
   readonly selected?: readonly string[];
   readonly onSelectedChange?: (next: readonly string[]) => void;
+  /**
+   * Server-side sort. Supply BOTH to take control; omit both to sort in-browser.
+   *
+   * ── Why the table cannot always sort for itself ─────────────────────────────
+   * Sorting the rows it holds is right for a list that fits in one response and
+   * wrong for a cursor-paginated one: `/admin/v1/players` returns fifty rows of
+   * seventy-four, so an in-browser sort would order those fifty and present the
+   * result as the top of the list. The operator sees "oldest account" and it is
+   * the oldest of an arbitrary page.
+   *
+   * Controlled, the caller pushes the sort into the URL, the server orders the
+   * whole set, and the table renders what came back — with `aria-sort` and the
+   * header affordance unchanged either way.
+   */
+  readonly sorting?: SortingState;
+  readonly onSortingChange?: (next: SortingState) => void;
   /** Required when `selectable` — each checkbox needs its own name. */
   readonly selectLabel?: (row: Row) => string;
   readonly selectAllLabel?: string;
@@ -77,6 +93,8 @@ export function DataTable<Row>({
   selectable = false,
   selected,
   onSelectedChange,
+  sorting: controlledSorting,
+  onSortingChange,
   selectLabel,
   selectAllLabel = 'Select all rows',
   columnsLabel = 'Columns',
@@ -86,9 +104,12 @@ export function DataTable<Row>({
   virtualizeFrom = 100,
   className,
 }: DataTableProps<Row>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [uncontrolledSorting, setUncontrolledSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const isManualSort = controlledSorting !== undefined;
+  const sorting = controlledSorting ?? uncontrolledSorting;
 
   /*
    * The rule is right in general and does not apply here. It warns that
@@ -102,10 +123,24 @@ export function DataTable<Row>({
     columns: columns as ColumnDef<Row, unknown>[],
     data: rows as Row[],
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    /*
+     * `manualSorting` tells TanStack the rows ALREADY arrive ordered, so it
+     * keeps the header state and the `aria-sort` attribute but does not reorder
+     * anything. Handing it a sorted row model as well would sort the page a
+     * second time, on top of the server's ordering of the whole set.
+     */
+    ...(isManualSort ? { manualSorting: true } : { getSortedRowModel: getSortedRowModel() }),
     getRowId: rowId,
     onColumnVisibilityChange: setColumnVisibility,
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => {
+      // TanStack passes either the next value or an updater function; resolving
+      // it here means the controlled caller receives a plain value and never has
+      // to know which it got.
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+
+      if (isManualSort) onSortingChange?.(next);
+      else setUncontrolledSorting(next);
+    },
     state: { sorting, columnVisibility },
   });
 

@@ -102,8 +102,8 @@ export const adminApi: AdminApi = {
   },
 
   ops: {
-    summary() {
-      return request('/ops/summary', { schema: OpsSummarySchema });
+    summary(signal) {
+      return request('/ops/summary', { schema: OpsSummarySchema, ...read(signal) });
     },
   },
 
