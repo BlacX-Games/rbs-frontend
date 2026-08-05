@@ -1,5 +1,6 @@
 import { ActionSpecimens } from '@/design/gallery/sections/ActionSpecimens';
 import { ChartSpecimens } from '@/design/gallery/sections/ChartSpecimens';
+import { DataSpecimens } from '@/design/gallery/sections/DataSpecimens';
 import { ChoiceSpecimens } from '@/design/gallery/sections/ChoiceSpecimens';
 import { DisplaySpecimens } from '@/design/gallery/sections/DisplaySpecimens';
 import { FieldSpecimens } from '@/design/gallery/sections/FieldSpecimens';
@@ -34,6 +35,7 @@ export function DesignGallery() {
       <SearchSpecimens />
       <ChartSpecimens />
       <ReadoutSpecimens />
+      <DataSpecimens />
     </div>
   );
 }

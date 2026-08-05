@@ -7,15 +7,14 @@ talking to the `/admin/v1` surface of [`rbs-backend`](../rbs-backend).
 This repo builds the **admin surface only**. Player-facing gameplay lives in the Unity client
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
-> **Status: Phase 1 in progress — design system.** Stage 1 shipped the §5.2 colour tokens for both
-> themes, the theme and density mechanics, and the three self-hosted faces. Stage 2 delivered **all
-> 30 primitives from §5.5**; stage 3a adds **`ChartFrame` and the nine chart types** — Sparkline,
-> Line, Area, Bar, StackedBar, Funnel, Heatmap, Radar, SmallMultiples — each with the mandatory
-> table-view twin. Still to come in Phase 1: 3b's readout patterns (StatTile, MetricCard,
-> HealthMeter, ScoreDial, the three states) and 3c's data patterns (DataTable, FilterBar,
-> AuditTrail, JsonDiff, ConfirmDialog, FlavorProfileEditor, DetailDrawer). The router and data
-> layer follow in Phase 2. Full build plan:
-> [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
+> **Status: Phase 1 all but complete — design system.** Stage 1 shipped the §5.2 colour tokens,
+> theme and density mechanics, and the three self-hosted faces. Stage 2 delivered **all 30 primitives
+> from §5.5**. Stage 3 delivered **`ChartFrame` + 9 chart types** and **all 15 composed patterns** —
+> StatTile, MetricCard, HealthMeter, ScoreDial, DecisionFlag, the three states, DataTable, FilterBar,
+> DetailDrawer, ConfirmDialog, JsonDiff, AuditTrail, FlavorProfileEditor. The gallery renders every
+> one of them across both themes and both densities. **One item remains before Phase 1 closes: the
+> Playwright visual snapshots** ("snapshots baselined"). The router and data layer follow in Phase 2.
+> Full build plan: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
 
@@ -78,6 +77,9 @@ src/
   components/charts/               ChartFrame + the nine visx chart types
     chart.ts                       series types, slot→var(--series-N), mark specs
     internal/                      axes, the table-view twin
+  components/patterns/             the 15 §5.5 composed patterns
+    flavor.ts                      the ten dimensions, in canonical order
+    internal/                      tier bands, CSV escaping, the JSON diff
   lib/cn.ts · env.ts               class joiner; Zod-validated build config
 public/fonts/                      committed WOFF2 + OFL licences (no CDN)
 scripts/fetch-fonts.mjs            reproduces public/fonts from Google Fonts

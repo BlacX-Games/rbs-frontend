@@ -206,6 +206,43 @@ test.describe('the design system', () => {
     expect(results.violations).toEqual([]);
   });
 
+  test('keeps the destructive action locked until the literal is typed', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Open destructive confirm' }).click();
+
+    const dialog = page.getByRole('alertdialog');
+    await expect(dialog).toBeVisible();
+
+    const action = dialog.getByRole('button', { name: 'Delete restaurant' });
+    await expect(action).toBeDisabled();
+
+    // Golden rule 8, in a real browser. The near-miss matters more than the
+    // match: lowercase must NOT unlock it, or the ritual is decorative.
+    await dialog.getByLabel('Type DELETE to confirm').fill('delete');
+    await expect(action).toBeDisabled();
+
+    await dialog.getByLabel('Type DELETE to confirm').fill('DELETE');
+    await expect(action).toBeEnabled();
+  });
+
+  test('keeps every table row at the density floor', async ({ page, density }) => {
+    await page.goto('/');
+
+    const table = page.getByRole('table', { name: 'Service sessions' });
+    await expect(table).toBeVisible();
+
+    const floor = density === 'comfortable' ? 44 : 32;
+
+    for (const row of await table.locator('tbody tr').all()) {
+      const box = await row.boundingBox();
+      if (box === null) continue;
+
+      // The DataTable is the console's primary surface and the one place
+      // --row-h earns its keep — §5.1 principle 2, density is a feature.
+      expect(box.height, await row.innerText()).toBeGreaterThanOrEqual(floor - 0.5);
+    }
+  });
+
   test('offers a skip link as the first focusable element', async ({ page }) => {
     await page.goto('/');
     await page.keyboard.press('Tab');
