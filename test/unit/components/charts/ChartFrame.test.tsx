@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { BarChart } from '@/components/charts/BarChart';
 import { ChartFrame } from '@/components/charts/ChartFrame';
 import { LineChart } from '@/components/charts/LineChart';
+import { RadarChart } from '@/components/charts/RadarChart';
 import { SmallMultiples } from '@/components/charts/SmallMultiples';
 import { Sparkline } from '@/components/charts/Sparkline';
 import type { ChartSeries } from '@/components/charts/chart';
@@ -207,6 +208,62 @@ describe('<SmallMultiples />', () => {
     await user.click(screen.getByRole('button', { name: 'Show as table' }));
 
     expect(screen.getByRole('table')).toBeVisible();
+  });
+});
+
+describe('<RadarChart />', () => {
+  const PROFILE: ChartSeries = {
+    key: 'brisket',
+    label: 'Smoked Brisket',
+    slot: 1,
+    points: [
+      { x: 'Salt', y: 72 },
+      { x: 'Umami', y: 88 },
+      { x: 'Smoke', y: 94 },
+    ],
+  };
+
+  const AXES = ['Salt', 'Umami', 'Smoke'];
+
+  function polygonsAt(width: number): readonly (string | null)[] {
+    const { container } = renderWithProviders(
+      <RadarChart
+        axes={AXES}
+        chartLabel="Show as chart"
+        series={[PROFILE]}
+        tableLabel="Show as table"
+        title="Flavour profile"
+        width={width}
+        xLabel="Dimension"
+      />,
+    );
+
+    return [...container.querySelectorAll('polygon')].map((node) => node.getAttribute('points'));
+  }
+
+  it('draws in its own coordinate space, not in measured pixels', () => {
+    const { container } = renderWithProviders(
+      <RadarChart
+        axes={AXES}
+        chartLabel="Show as chart"
+        series={[PROFILE]}
+        tableLabel="Show as table"
+        title="Flavour profile"
+        width={480}
+        xLabel="Dimension"
+      />,
+    );
+
+    expect(container.querySelector('svg')).toHaveAttribute('viewBox', '0 0 280 280');
+  });
+
+  it('puts every vertex in the same place at any container width', () => {
+    // THE regression. Geometry used to be `Math.min(width, height)` centred on
+    // `width / 2`, so a container settling a pixel wider moved every vertex —
+    // which surfaced as 38,477 differing pixels in the visual suite, in an
+    // image whose dimensions were identical. A radar is a fixed-aspect diagram
+    // and `viewBox` is what makes that true rather than approximately true.
+    expect(polygonsAt(320)).toEqual(polygonsAt(720));
   });
 });
 

@@ -25,6 +25,27 @@ import {
  */
 const MAX_SERIES = 3;
 
+/**
+ * The square the radar is drawn in, in its OWN coordinates.
+ *
+ * Geometry is deliberately independent of the measured pixel width. It used to
+ * be `Math.min(width, height)` with the centre at `width / 2`, which made every
+ * vertex a function of however wide the container happened to settle — and
+ * inside FlavorProfileEditor, where the chart is a `flex-1` sibling of a
+ * ten-field fieldset, that landed a pixel or two apart between renders. The
+ * visual-regression suite caught it as 38,477 differing pixels in an image of
+ * otherwise identical dimensions.
+ *
+ * A radar is a fixed-aspect diagram, so the honest model is to draw it once at
+ * a known size and let `viewBox` scale it. `SmallMultiples` already does this.
+ *
+ * The other charts deliberately do NOT: axis tick spacing and label collision
+ * are pixel decisions, and a viewBox would scale their type along with the
+ * marks.
+ */
+const BOX = 280;
+const PADDING = 24;
+
 export function RadarChart({
   axes,
   max = 100,
@@ -39,10 +60,9 @@ export function RadarChart({
 
   return (
     <ChartFrame {...frame} legendMark="line" series={shown}>
-      {({ width, height }) => {
-        const size = Math.min(width, height);
-        const radius = size / 2 - 24;
-        const centre = { x: width / 2, y: height / 2 };
+      {({ height }) => {
+        const radius = BOX / 2 - PADDING;
+        const centre = { x: BOX / 2, y: BOX / 2 };
 
         const pointAt = (index: number, value: number): { x: number; y: number } => {
           // Starts at twelve o'clock and runs clockwise, which is how a reader
@@ -60,7 +80,15 @@ export function RadarChart({
           one.points.find((point) => point.x === axis)?.y ?? 0;
 
         return (
-          <svg height={height} role="presentation" width={width}>
+          <svg
+            height={height}
+            // `meet` scales the square to fit and centres it, so a wider
+            // container adds air rather than moving a single vertex.
+            preserveAspectRatio="xMidYMid meet"
+            role="presentation"
+            viewBox={`0 0 ${String(BOX)} ${String(BOX)}`}
+            width="100%"
+          >
             {/* Rings and spokes are the grid — hairline, solid, recessive. */}
             {[0.25, 0.5, 0.75, 1].map((step) => (
               <Polygon

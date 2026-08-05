@@ -18,6 +18,30 @@ export default defineConfig({
   },
 
   /*
+   * Visual-regression defaults, so no individual snapshot has to restate them.
+   *
+   * `animations: 'disabled'` freezes CSS animations and transitions at their
+   * end state — without it a snapshot taken mid-transition differs from the
+   * next run for no reason anyone can act on.
+   *
+   * `scale: 'css'` normalises device pixel ratio, so a HiDPI machine and a CI
+   * runner produce comparable images.
+   *
+   * The ratio tolerance absorbs sub-pixel font antialiasing, which genuinely
+   * varies between platforms. Baselines are still platform-suffixed by
+   * Playwright (`…-chromium-linux.png`), so a different OS regenerates its own
+   * rather than silently comparing against the wrong ones.
+   */
+  expect: {
+    toHaveScreenshot: {
+      animations: 'disabled',
+      caret: 'hide',
+      scale: 'css',
+      maxDiffPixelRatio: 0.01,
+    },
+  },
+
+  /*
    * The §5.6 matrix, SCOPED rather than applied to everything.
    *
    * `*.matrix.spec.ts` runs once per theme × density; every other spec runs

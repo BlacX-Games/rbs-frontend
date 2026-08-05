@@ -7,14 +7,18 @@ talking to the `/admin/v1` surface of [`rbs-backend`](../rbs-backend).
 This repo builds the **admin surface only**. Player-facing gameplay lives in the Unity client
 (`rbs-game`); this console never runs the simulation, and it never writes a score, rating, or payout.
 
-> **Status: Phase 1 all but complete — design system.** Stage 1 shipped the §5.2 colour tokens,
-> theme and density mechanics, and the three self-hosted faces. Stage 2 delivered **all 30 primitives
-> from §5.5**. Stage 3 delivered **`ChartFrame` + 9 chart types** and **all 15 composed patterns** —
-> StatTile, MetricCard, HealthMeter, ScoreDial, DecisionFlag, the three states, DataTable, FilterBar,
-> DetailDrawer, ConfirmDialog, JsonDiff, AuditTrail, FlavorProfileEditor. The gallery renders every
-> one of them across both themes and both densities. **One item remains before Phase 1 closes: the
-> Playwright visual snapshots** ("snapshots baselined"). The router and data layer follow in Phase 2.
-> Full build plan: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
+> **Status: Phase 1 complete — the design system.** Every §5 decision is encoded and provable: the
+> §5.2 colour tokens for both themes, theme and density mechanics, three self-hosted faces, **all 30
+> primitives**, **`ChartFrame` + 9 chart types**, **all 15 composed patterns**, the gallery rendering
+> every one of them in both themes at both densities, a Vitest suite that re-derives every published
+> contrast ratio and ΔE gate from the shipped CSS, axe across the theme × density matrix, and
+> baselined visual-regression snapshots.
+>
+> **Next: Phase 2 — app shell and data layer.** Router, the §4 route tree, sign-in, `AdminApi`, and
+> the MSW mock network. That is the phase that turns this from a component gallery into a navigable
+> dashboard. Note that `rbs-backend` has no admin API yet (§1.2), so Phase 2 runs on mocks until the
+> backend's own Phases 3–4 land. Full build plan:
+> [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9.
 
 ## Prerequisites
 
@@ -152,6 +156,26 @@ matching the §5.4 scale (`2 4 8 12 16 24 32 48 64 96`) rather than Tailwind's u
 The 44px floor is **not** verifiable in Vitest (`css: false` means no stylesheet loads) and **not**
 catchable by axe (SC 2.5.8 is 24×24 at AA; 44×44 is SC 2.5.5, which is AAA).
 `e2e/design.matrix.spec.ts` measures real boxes across theme × density and is the only guard.
+
+### Visual regression
+
+`e2e/design.visual.spec.ts` snapshots each of the 17 gallery sections in both themes — 34 baselines
+under `e2e/design.visual.spec.ts-snapshots/`.
+
+- **Per section, not per page.** The gallery is ~20,000px tall; one image would mean any one-pixel
+  change fails everything with an unreadable diff. Section-sized images give failure locality.
+- **Both themes, one density.** Density changes every control's _height_, and
+  `e2e/design.matrix.spec.ts` already measures that with `boundingBox()` in all four combinations —
+  a measured 44px floor beats a picture of one.
+- **Baselines are platform-suffixed** (`…-chromium-linux.png`). CI on another OS regenerates its
+  own rather than silently comparing against these, so a first-run CI failure there is not a
+  regression.
+- **A failure means "look at this", never "revert this".** These catch unintended visual change;
+  whether the new rendering is _better_ is a design decision. Re-baseline with
+  `npx playwright test design.visual --update-snapshots`.
+- Snapshots run under emulated reduced motion, so nothing is mid-transition. That is also why
+  `RadarChart` draws in a fixed `viewBox` rather than in measured pixels — geometry that depends on
+  a container's settled width is not reproducible, and this suite is what found it.
 
 ### Writing a chart
 
