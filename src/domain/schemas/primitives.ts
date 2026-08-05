@@ -116,11 +116,19 @@ export function pageOf<T extends z.ZodType>(item: T) {
   });
 }
 
-/** The shape without an item type, for helpers that only touch the envelope. */
+/**
+ * The shape without an item type, for helpers that only touch the envelope.
+ *
+ * `total?: number | undefined` spells the `undefined` out rather than relying
+ * on `?`. Under `exactOptionalPropertyTypes` a bare `total?: number` means
+ * "absent, or a number — never present-and-undefined", and Zod's `.optional()`
+ * produces exactly the type that rule rejects. The same friction the README
+ * documents for Radix props, from the other direction.
+ */
 export interface Page<T> {
   readonly items: readonly T[];
   readonly nextCursor: string | null;
-  readonly total?: number;
+  readonly total?: number | undefined;
 }
 
 /* ── The error envelope ──────────────────────────────────────────────────── */

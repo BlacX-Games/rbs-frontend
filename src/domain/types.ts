@@ -16,8 +16,12 @@ import type {
 import type {
   AuthIdentitySummarySchema,
   GuestSchema,
+  OpsAlertSchema,
+  OpsSummarySchema,
+  PlayerDetailSchema,
   PlayerRowSchema,
   PlayerSchema,
+  RestaurantDetailSchema,
   RestaurantRowSchema,
   RestaurantSchema,
   RestaurantSummarySchema,
@@ -26,6 +30,7 @@ import type {
   ReviewSchema,
   ServiceSessionRowSchema,
   ServiceSessionSchema,
+  SessionDetailSchema,
 } from '@/domain/schemas/ops';
 import type { ValidationIssueSchema } from '@/domain/schemas/primitives';
 
@@ -78,6 +83,14 @@ export type ServiceSessionRow = z.infer<typeof ServiceSessionRowSchema>;
 export type Review = z.infer<typeof ReviewSchema>;
 export type ReviewRow = z.infer<typeof ReviewRowSchema>;
 export type ReviewPatch = z.infer<typeof ReviewPatchSchema>;
+
+/* ── Screen responses ────────────────────────────────────────────────────── */
+
+export type PlayerDetail = z.infer<typeof PlayerDetailSchema>;
+export type RestaurantDetail = z.infer<typeof RestaurantDetailSchema>;
+export type SessionDetail = z.infer<typeof SessionDetailSchema>;
+export type OpsSummary = z.infer<typeof OpsSummarySchema>;
+export type OpsAlert = z.infer<typeof OpsAlertSchema>;
 
 /* ── Catalog ─────────────────────────────────────────────────────────────── */
 

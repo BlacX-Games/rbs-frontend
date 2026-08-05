@@ -48,6 +48,18 @@ export const SessionResponseSchema = z.object({
   }),
 });
 
+/**
+ * `POST /admin/v1/auth/refresh` — a new access token from the cookie alone.
+ *
+ * No operator: a refresh renews a credential, it does not change who is signed
+ * in. Returning one anyway would make every component reading the session
+ * re-render on a silent background call for a change none of them can see.
+ */
+export const RefreshResponseSchema = z.object({
+  accessToken: z.string().min(1),
+  expiresIn: z.int().positive(),
+});
+
 /** `GET /admin/v1/me` — the operator behind the current token. */
 export const OperatorSchema = SessionResponseSchema.shape.operator;
 

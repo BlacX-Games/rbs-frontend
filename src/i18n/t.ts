@@ -52,6 +52,20 @@ export type MessageValues<K extends MessageKey> = Readonly<Record<ParamsOf<K>, s
  */
 type Args<K extends MessageKey> = [ParamsOf<K>] extends [never] ? [] : [values: MessageValues<K>];
 
+/**
+ * Keys whose message carries no placeholders.
+ *
+ * The type a caller needs when it builds a key at RUNTIME — `api/errors.ts`
+ * turns a backend `error.code` into `error.${code}` — because such a caller has
+ * no values to pass and no way to know statically whether the key it landed on
+ * wanted some. Narrowing to this makes "resolved dynamically" and "takes
+ * parameters" mutually exclusive by construction, rather than a rule someone
+ * has to remember when adding a message.
+ */
+export type StaticMessageKey = {
+  [K in MessageKey]: [ParamsOf<K>] extends [never] ? K : never;
+}[MessageKey];
+
 const PLACEHOLDER = /\{(\w+)\}/g;
 
 export function t<K extends MessageKey>(key: K, ...args: Args<K>): string {

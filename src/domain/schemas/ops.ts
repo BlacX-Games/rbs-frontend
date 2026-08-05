@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AGE_BRACKETS, AI_TIERS, ARCHETYPES, AUTH_PROVIDERS, ROLES } from '@/domain/enums';
+import { AmbienceSchema, DishSchema, DrinkSchema, StaffSchema } from '@/domain/schemas/catalog';
 import {
   IsoDateTimeSchema,
   MoneySchema,
@@ -218,3 +219,113 @@ export const ReviewPatchSchema = z
   .refine((patch) => Object.keys(patch).length > 0, {
     message: 'A review patch must change something',
   });
+
+/* ── Detail responses ────────────────────────────────────────────────────── */
+
+/**
+ * One request per screen, not one per panel.
+ *
+ * A detail route that fires six queries shows six independent spinners and six
+ * independent failures, and the operator watches the page assemble itself. The
+ * backend joins once; the console renders once.
+ */
+export const PlayerDetailSchema = z.object({
+  player: PlayerRowSchema,
+  identities: z.array(AuthIdentitySummarySchema),
+  restaurants: z.array(RestaurantSummarySchema),
+  /** Oldest first, so the sparkline reads left to right without a re-sort. */
+  recentSessions: z.array(ServiceSessionSchema),
+});
+
+export const RestaurantDetailSchema = z.object({
+  restaurant: RestaurantRowSchema,
+  dishes: z.array(DishSchema),
+  drinks: z.array(DrinkSchema),
+  staff: z.array(StaffSchema),
+  ambience: AmbienceSchema.nullable(),
+  guests: z.array(GuestSchema),
+});
+
+export const SessionDetailSchema = z.object({
+  session: ServiceSessionRowSchema,
+  restaurant: RestaurantSummarySchema,
+  reviews: z.array(ReviewRowSchema),
+  /**
+   * Reputation before this service ran, so `reputationChange` has somewhere to
+   * start. Derived server-side: the console must never compute a reputation,
+   * only display the two the sim produced (golden rule 2).
+   */
+  reputationBefore: ScoreSchema,
+});
+
+/* ── Ops home (§6.1) ─────────────────────────────────────────────────────── */
+
+/**
+ * The anomaly strip, as DATA rather than as sentences.
+ *
+ * The obvious shape is `{ message: string }`, and it is wrong twice: it ships
+ * untranslated English from the server, and it puts copy in a layer with no
+ * access to `formatMoney`. A discriminated union lets the UI compose the
+ * sentence from the catalogue and format the figure exactly.
+ */
+/**
+ * A React key and a dismiss handle, NOT an entity identifier.
+ *
+ * An alert is derived — "this service lost money", "these staff are burnt out"
+ * — so it has no row of its own and no UUID. Typing it as one would be a lie
+ * the schema enforces: the first composite key like `alert-morale-<id>` fails
+ * to parse, and the fix would be to mint a fake UUID for a thing that is not a
+ * record.
+ */
+const AlertIdSchema = z.string().min(1);
+
+export const OpsAlertSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('negativeProfit'),
+    id: AlertIdSchema,
+    at: IsoDateTimeSchema,
+    restaurantId: UuidSchema,
+    restaurantName: z.string(),
+    sessionId: UuidSchema,
+    profit: MoneySchema,
+  }),
+  z.object({
+    kind: z.literal('burntOutStaff'),
+    id: AlertIdSchema,
+    at: IsoDateTimeSchema,
+    restaurantId: UuidSchema,
+    restaurantName: z.string(),
+    /** Morale in the balancing.json "Burnt Out" band, 0–19. */
+    staffCount: z.int().min(1),
+  }),
+  z.object({
+    kind: z.literal('failedInspection'),
+    id: AlertIdSchema,
+    at: IsoDateTimeSchema,
+    restaurantId: UuidSchema,
+    restaurantName: z.string(),
+    sessionId: UuidSchema,
+    result: z.string(),
+  }),
+]);
+
+/**
+ * `GET /admin/v1/ops/summary`.
+ *
+ * `asOf` is not decoration: §6.4 requires every aggregate to carry the instant
+ * it was computed, because a polled figure on screen is always slightly old and
+ * an operator comparing two panels needs to know they agree.
+ */
+export const OpsSummarySchema = z.object({
+  asOf: IsoDateTimeSchema,
+  today: z.object({
+    sessions: z.int().min(0),
+    covers: z.int().min(0),
+    revenue: MoneySchema,
+    /** `null` when nothing ran — never 0, which reads as "everyone hated it". */
+    averageSatisfaction: ScoreSchema.nullable(),
+    reviewsAwaitingModeration: z.int().min(0),
+  }),
+  recentSessions: z.array(ServiceSessionRowSchema),
+  alerts: z.array(OpsAlertSchema),
+});
